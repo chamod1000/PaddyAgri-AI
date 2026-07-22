@@ -5,3 +5,5 @@ venv/
 faiss_db/
 chroma_db/
 .DS_Store
+*.pdf
+*.jpg
