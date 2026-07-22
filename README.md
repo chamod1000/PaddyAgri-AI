@@ -10,18 +10,24 @@ An intelligent multi-agent system designed to assist Sri Lankan farmers and agri
 
 ---
 
+## 📂 Dataset & Knowledge Base Access
+
+The domain knowledge base comprises **20+ PDF documents** (disease manuals, seed acts, fertilizer recommendations, pest control bulletins) organized into 6 logical subdirectories.
+
+* 🔗 **Google Drive Full Dataset Link:** [Sri Lankan Paddy Farming PDF Corpus](https://drive.google.com/drive/folders/1O6Teo6_gPBZOd27rtzAI84RSTKKU5er9?usp=sharing)
+* 📁 **GitHub Repository Structure (`Data/PDF/`):**
+  - `Fertilizer_and_Chemicals`: Soil nutrient recommendations, NPK ratios, pesticide/weedicide regulations.
+  - `General_Cultivation_Guidelines`: Seasonal planting guidelines (Yala/Maha), water management, land preparation.
+  - `Imports_Quarantine`: Import restrictions, quarantine acts, biosecurity protocols.
+  - `Paddy_Diseases_and_Pests`: Detailed diagnostic manuals for Paddy Blast, Sheath Blight, Brown Planthopper, etc.
+  - `Paddy_Seed_Production`: Certification criteria, seed purity rates, germination standards.
+  - `Policy_and_Acts`: National agricultural acts, seed acts, environmental regulations.
+
+---
+
 ## 🛠 Tech Stack & RAG Architecture (Step 2 Implementation)
 
-### 1. Document Loading & Organization
-The domain knowledge base consists of 20+ PDF documents organized into 6 logical subdirectories inside `Data/PDF/`:
-- `Fertilizer_and_Chemicals`: Soil nutrient recommendations, NPK ratios, weedicides/pesticides.
-- `General_Cultivation_Guidelines`: Seasonal planting guidelines (Yala/Maha), water management, land preparation.
-- `Imports_Quarantine`: Import restrictions, quarantine acts, biosecurity measures.
-- `Paddy_Diseases_and_Pests`: Detailed diagnostic manuals for Paddy Blast, Sheath Blight, Brown Planthopper, etc.
-- `Paddy_Seed_Production`: Certification criteria, seed purity rates, germination standards.
-- `Policy_and_Acts`: National agricultural acts, seed acts, environmental regulations.
-
-### 2. Document Chunking Strategy
+### 1. Document Chunking Strategy
 - **Text Splitter:** `RecursiveCharacterTextSplitter`
 - **Chunk Size:** `1000` characters (~150–200 words)
 - **Chunk Overlap:** `200` characters
@@ -32,11 +38,11 @@ The domain knowledge base consists of 20+ PDF documents organized into 6 logical
 - **Boundary Safety via Overlap:** The 200-character chunk overlap prevents critical facts positioned at page or paragraph boundaries from being severed across adjacent chunks, maintaining continuity for semantic retrieval.
 - **Recursive Splitting:** Splitting hierarchically by double line breaks (`\n\n`), single line breaks (`\n`), and sentence periods (`. `) preserves paragraph integrity and prevents mid-sentence breaks wherever possible.
 
-### 3. Multilingual Embedding Model
+### 2. Multilingual Embedding Model
 - **Model:** `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` via HuggingFace Embeddings.
 - **Rationale:** Sri Lankan agricultural publications and extension bulletins often contain a blend of English technical terms (e.g., *Pyricularia oryzae*, *NPK 14:14:14*) and Sinhala descriptions (e.g., *ගොයම් මැස්සා, පාළු රෝගය*). The 12-layer multilingual transformer projects Sinhala script and English query terms into a shared high-dimensional vector space, facilitating cross-lingual semantic search.
 
-### 4. Local Vector Store
+### 3. Local Vector Store
 - **Vector Database:** FAISS (Facebook AI Similarity Search) / Chroma
 - **Index Directory:** `./faiss_db/`
 - **Metadata Retained:** `category`, `filename`, `source`, `page`.

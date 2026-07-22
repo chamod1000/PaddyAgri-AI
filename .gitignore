@@ -5,5 +5,9 @@ venv/
 faiss_db/
 chroma_db/
 .DS_Store
-*.pdf
-*.jpg
+
+# Exclude PDFs exceeding GitHub's 100MB file size limit (Full corpus available on Google Drive)
+Data/PDF/General_Cultivation_Guidelines/2009 VRC.pdf
+Data/PDF/General_Cultivation_Guidelines/2011  VRC.pdf
+Data/PDF/General_Cultivation_Guidelines/2014 VRC.pdf
+Data/PDF/General_Cultivation_Guidelines/Paddy Seed Production Sinhala Full Book.pdf
