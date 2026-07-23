@@ -1,6 +1,6 @@
 """
 DiagnosticAgent Implementation
-Agentic Pattern 2: Tool-Use & ReAct Pattern using RAG + Groq Llama 3.3 70B model.
+Agentic Pattern 2: Tool-Use & ReAct Pattern using RAG + Groq Llama 3.3 70B / Google Gemini model.
 """
 
 import json
@@ -8,21 +8,27 @@ from typing import List
 
 from core.agent_messages import AgentMessage, DiagnosticResult, RAGContextChunk
 from core.agents.base_agent import BaseAgent
-from config.model_provider import get_reasoning_model
+from config.model_provider import get_reasoning_model, detect_language_and_script
 from tools.tools import rag_search_tool
 
 
 class DiagnosticAgent(BaseAgent):
     """
     Specialized agent for paddy disease diagnosis using deep reasoning model + RAG search tool.
+    Dynamically routes to Gemini if Sinhala or Singlish language is detected.
     """
 
     def __init__(self):
+        # Default initialization with standard reasoning model
         super().__init__(name="DiagnosticAgent", model=get_reasoning_model())
 
     def process(self, message: AgentMessage) -> DiagnosticResult:
         self._log_start(message)
         query = message.user_query
+
+        # Step 0: Language & script auto-detection for routing to dedicated Gemini model
+        is_sinhala_or_singlish = detect_language_and_script(query)
+        self.model = get_reasoning_model(is_sinhala_or_singlish=is_sinhala_or_singlish)
 
         # Step 1: Tool-Use Pattern - Retrieve RAG context chunks
         rag_results = rag_search_tool.invoke({"query": query, "top_k": 4})
@@ -50,7 +56,7 @@ class DiagnosticAgent(BaseAgent):
             '  "treatment_recommended": ["control measure 1", "fungicide/insecticide 2"],\n'
             '  "confidence_level": "High / Medium / Low"\n'
             "}\n"
-            "If Sinhala language text is provided, include Sinhala translations alongside English terms."
+            "If Sinhala language text is provided, include Sinhala or Singlish translations alongside English terms."
         )
 
         user_content = f"Farmer Query: {query}\n\nRetrieved Knowledge Base Context:\n{context_str}"

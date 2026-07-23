@@ -1,22 +1,29 @@
 """
 RouterAgent Implementation
 Agentic Pattern 1: Router Pattern using fast Groq Llama 3.1 8B model.
+Includes Sinhala & Singlish language auto-detection logic.
 """
 
 from core.agent_messages import AgentMessage, QueryIntent
 from core.agents.base_agent import BaseAgent
-from config.model_provider import get_router_model
+from config.model_provider import get_router_model, detect_language_and_script
 
 
 class RouterAgent(BaseAgent):
     """
     Uses fast, low-latency LLM (Groq Llama 3.1 8B) to route incoming farmer queries.
+    Also acts as language script detector helper.
     """
 
     def __init__(self):
         super().__init__(name="RouterAgent", model=get_router_model())
 
     def route_query(self, user_query: str) -> QueryIntent:
+        # A) Perform Sinhala/Singlish Detection
+        is_sinhala_or_singlish = detect_language_and_script(user_query)
+        if is_sinhala_or_singlish:
+            print(f"[{self.name}] Sinhala or Singlish script detected! Activating Google Gemini route.")
+
         system_prompt = (
             "You are an intent classification agent for a Sri Lankan Paddy Farming Support System.\n"
             "Classify the user's query into EXACTLY ONE of the following categories:\n"
