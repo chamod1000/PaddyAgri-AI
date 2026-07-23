@@ -135,10 +135,14 @@ cp .env.example .env
 
 ### 3. Running the Streamlit Web App
 ```bash
-streamlit run app.py
+streamlit run ui/app.py
+# OR using the main entry point:
+python run.py
 ```
 
 ### 4. Running the Multi-Agent System in CLI
 ```bash
-python agent_orchestrator.py
+python run.py cli
+# OR directly:
+python -c "from core.agent_orchestrator import run_sample_evaluations; run_sample_evaluations()"
 ```

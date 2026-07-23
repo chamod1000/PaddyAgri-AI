@@ -6,7 +6,7 @@ Provides tools for RAG vector search retrieval and fertilizer dosage calculation
 
 from typing import Dict, List, Any
 from langchain_core.tools import tool
-from agent_messages import RAGContextChunk
+from core.agent_messages import RAGContextChunk
 
 
 @tool
@@ -23,7 +23,7 @@ def rag_search_tool(query: str, top_k: int = 4) -> List[Dict[str, Any]]:
         List of matching document chunks with filename, category, page, and score.
     """
     try:
-        from rag_pipeline import create_or_load_vector_store
+        from rag.rag_pipeline import create_or_load_vector_store
         vector_store = create_or_load_vector_store(force_rebuild=False)
         results = vector_store.similarity_search_with_score(query, k=top_k)
 

@@ -10,12 +10,13 @@ import uuid
 import json
 from typing import Dict, List, Any, Optional
 
-from agent_messages import (
-    AgentMessage, QueryIntent, DiagnosticResult, 
-    FertilizerRecommendation, RAGContextChunk
+from core.agent_messages import (
+    AgentMessage, QueryIntent, DiagnosticResult,
+    FertilizerRecommendation, RAGContextChunk,
+    SafetyVerdict, ReflectionResult
 )
-from model_provider import get_router_model, get_reasoning_model
-from tools import rag_search_tool, fertilizer_calculator_tool
+from config.model_provider import get_router_model, get_reasoning_model
+from tools.tools import rag_search_tool, fertilizer_calculator_tool
 
 
 class RouterAgent:
