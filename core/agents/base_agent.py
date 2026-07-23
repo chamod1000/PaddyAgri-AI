@@ -1,6 +1,6 @@
 """
 BaseAgent Abstract Parent Class
-Provides common LLM invocation, error handling, and message logging infrastructure.
+Provides common LLM invocation, error handling, resilient fallback, and message logging infrastructure.
 """
 
 import time
@@ -30,7 +30,7 @@ class BaseAgent(ABC):
         print(f"[{self.name}] Message {message_id} processed successfully.")
 
     def invoke_llm(self, messages: list) -> Any:
-        """Common LLM invocation with basic error handling and timing."""
+        """Common LLM invocation with automatic multi-provider fallback if primary API hits quota/rate limits."""
         try:
             start_time = time.time()
             response = self.model.invoke(messages)
@@ -38,8 +38,19 @@ class BaseAgent(ABC):
             print(f"[{self.name}] LLM response received in {duration:.2f}s")
             return response
         except Exception as e:
-            self._log_error(e, "LLM invocation failed")
-            raise
+            self._log_error(e, "Primary LLM invocation failed")
+            try:
+                from config.model_provider import get_reasoning_model
+                print(f"[{self.name}] Retrying invocation using resilient Groq 70B fallback model...")
+                fallback_model = get_reasoning_model(is_sinhala_or_singlish=False)
+                start_time = time.time()
+                response = fallback_model.invoke(messages)
+                duration = time.time() - start_time
+                print(f"[{self.name}] Fallback LLM response received in {duration:.2f}s")
+                return response
+            except Exception as fb_err:
+                self._log_error(fb_err, "Fallback LLM invocation failed")
+                raise e
 
     @abstractmethod
     def process(self, message: AgentMessage) -> Any:
