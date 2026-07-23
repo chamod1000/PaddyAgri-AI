@@ -60,11 +60,30 @@ class FertilizerRecommendation(BaseModel):
     rag_sources: List[RAGContextChunk] = []
 
 
+class SafetyVerdict(BaseModel):
+    """Safety check result from ReflectionAgent for a single recommendation."""
+    check_name: str = Field(..., description="Name of safety check (dosage_validation, allergen_screen, regulatory_citation)")
+    passed: bool = Field(..., description="Whether the check passed")
+    message: str = Field(default="", description="Human-readable message explaining the verdict")
+    severity: str = Field(default="info", description="Severity level: info, warning, critical")
+
+
+class ReflectionResult(BaseModel):
+    """Output produced by the ReflectionAgent after safety & quality verification."""
+    recommendation_id: str = Field(..., description="Unique ID linking back to parent recommendation")
+    all_checks_passed: bool = Field(default=False, description="Global pass/fail if ALL checks passed")
+    verdicts: List[SafetyVerdict] = Field(default_factory=list, description="List of individual safety check results")
+    warnings: List[str] = Field(default_factory=list, description="Aggregated warning messages")
+    regulatory_citations: List[str] = Field(default_factory=list, description="Applicable Sri Lankan DoA regulatory citations")
+    biosecurity_alerts: List[str] = Field(default_factory=list, description="Any biosecurity / invasive species concerns")
+
+
 class AgentResponse(BaseModel):
     """Final synthesized response returned to the user."""
     query: str
     intent: QueryIntent
     diagnostic_info: Optional[DiagnosticResult] = None
     fertilizer_info: Optional[FertilizerRecommendation] = None
+    reflection_result: Optional[ReflectionResult] = None
     final_synthesis: str
     message_trace: List[AgentMessage] = []
