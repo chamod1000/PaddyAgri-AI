@@ -2,23 +2,27 @@
 Multi-Agent Paddy Disease Diagnostic & Fertilizer Recommendation System
 Farmer-Centric Web Application (ui/app.py)
 
-Module: IT41043 - Agentic AI (Horizon Campus)
-Author: Chamod
-
-Layout (Human-Centered, Above-the-Fold Priority):
-  1. Hero Header + Chat Input + Quick Chips    (top — immediate interaction)
-  2. Progress Stepper                          (after submit)
-  3. 3-Tab Response Area                       (middle — results)
-  4. Farmer Utility Tools                      (bottom — calculators, cards, gallery)
-  Sidebar: System status, Viva toggle, 1920 hotline, corpus link
+UI: Conversational Chat Interface using Streamlit native chat primitives.
+  - Chat history in st.session_state.messages
+  - st.chat_message for user & assistant bubbles
+  - st.chat_input for queries
+  - Each assistant bubble contains interactive 3-tab response
+  - Viva mode adds a 4th tab for raw A2A JSON traces
+  - Farmer utility tools at bottom
+  - Sidebar: status, viva toggle, 1920 hotline, clear button, corpus link
 """
 
 import os
 import json
+import asyncio
 import streamlit as st
 from dotenv import load_dotenv
-
 import sys
+
+# Apply nest_asyncio to support run_in_executor/gather in Streamlit threads
+import nest_asyncio
+nest_asyncio.apply()
+
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
 if hasattr(sys.stderr, "reconfigure"):
@@ -26,176 +30,66 @@ if hasattr(sys.stderr, "reconfigure"):
 
 load_dotenv()
 
-# ──────────────────────────────────────────────
-# Page Config
-# ──────────────────────────────────────────────
+# ── Page Config ──
 st.set_page_config(
-    page_title="Sri Lankan Paddy Farming AI Advisor",
+    page_title="PaddyAgri AI - Sri Lankan Agriculture Smart Portal",
     page_icon="🌾",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# ──────────────────────────────────────────────
-# Custom CSS — Paddy Emerald / Mint / Cream
-# High contrast, min 16px, glassmorphism cards
-# ──────────────────────────────────────────────
+# ── Custom CSS ──
 st.markdown("""
 <style>
-    /* ── Base Typography ── */
-    html, body, [class*="css"] {
-        font-size: 16px;
-        color: #1b4332;
-    }
+    html, body, [class*="css"] { font-size: 16px; color: #1b4332; }
 
-    /* ── Hero Banner ── */
     .hero-banner {
         background: linear-gradient(135deg, #1b4332 0%, #2d6a4f 60%, #40916c 100%);
-        color: #ffffff;
-        padding: 2.2rem 2rem 1.6rem;
-        border-radius: 18px;
-        text-align: center;
-        border-bottom: 5px solid #e9c46a;
-        box-shadow: 0 8px 30px rgba(27, 67, 50, 0.25);
-        margin-bottom: 1.2rem;
+        color: #fff; padding: 1.8rem 1.5rem 1.4rem; border-radius: 18px;
+        text-align: center; border-bottom: 5px solid #e9c46a;
+        box-shadow: 0 8px 30px rgba(27,67,50,0.25); margin-bottom: 0.8rem;
     }
-    .hero-title {
-        font-size: 2.2rem;
-        font-weight: 800;
-        letter-spacing: -0.5px;
-    }
-    .hero-sub {
-        font-size: 1.05rem;
-        color: #e9c46a;
-        font-weight: 500;
-        margin-top: 0.4rem;
-    }
+    .hero-title { font-size: 2.0rem; font-weight: 800; letter-spacing: -0.5px; }
+    .hero-sub { font-size: 1rem; color: #e9c46a; font-weight: 500; margin-top: 0.3rem; }
 
-    /* ── Glassmorphism Card ── */
     .glass-card {
-        background: rgba(248, 251, 248, 0.85);
-        backdrop-filter: blur(12px);
+        background: rgba(248,251,248,0.85); backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
-        border: 1px solid rgba(183, 228, 199, 0.5);
-        border-radius: 14px;
-        padding: 1.4rem;
-        box-shadow: 0 4px 24px rgba(27, 67, 50, 0.06);
+        border: 1px solid rgba(183,228,199,0.5); border-radius: 14px;
+        padding: 1.2rem; box-shadow: 0 4px 24px rgba(27,67,50,0.06);
         margin-bottom: 0.8rem;
     }
-    .glass-card-title {
-        font-weight: 700;
-        font-size: 1.08rem;
-        color: #1b4332;
-        margin-bottom: 0.5rem;
-    }
-    .glass-card p, .glass-card li {
-        font-size: 0.95rem;
-        color: #2d6a4f;
-        line-height: 1.55;
-    }
+    .glass-card-title { font-weight: 700; font-size: 1.05rem; color: #1b4332; margin-bottom: 0.4rem; }
+    .glass-card p, .glass-card li { font-size: 0.95rem; color: #2d6a4f; line-height: 1.5; }
 
-    /* ── Progress Stepper ── */
-    .stepper-row {
-        display: flex;
-        align-items: stretch;
-        gap: 0.6rem;
-        margin: 1rem 0 1.5rem;
-    }
-    .step-card {
-        flex: 1;
-        background: #f8fbf8;
-        border: 2px solid #b7e4c7;
-        border-radius: 12px;
-        padding: 1rem 0.7rem;
-        text-align: center;
-        position: relative;
-    }
-    .step-card.done {
-        border-color: #2d6a4f;
-        background: #d8f3dc;
-    }
-    .step-num {
-        display: inline-block;
-        background: #2d6a4f;
-        color: #fff;
-        width: 28px; height: 28px;
-        line-height: 28px;
-        border-radius: 50%;
-        font-weight: 700;
-        font-size: 0.85rem;
-        margin-bottom: 0.4rem;
-    }
-    .step-label {
-        font-weight: 700;
-        font-size: 0.92rem;
-        color: #1b4332;
-    }
-    .step-detail {
-        font-size: 0.78rem;
-        color: #555;
-        margin-top: 0.15rem;
-    }
-    .step-arrow {
-        display: flex;
-        align-items: center;
-        font-size: 1.3rem;
-        color: #2d6a4f;
-        padding: 0 0.1rem;
-    }
-
-    /* ── Safety Badges ── */
     .badge-pass {
-        background: #d4edda;
-        color: #155724;
-        padding: 0.55rem 1.1rem;
-        border-radius: 22px;
-        font-weight: 700;
-        font-size: 0.95rem;
-        display: inline-block;
-        border: 1px solid #c3e6cb;
-        margin-bottom: 0.6rem;
+        background: #d4edda; color: #155724; padding: 0.5rem 1rem;
+        border-radius: 22px; font-weight: 700; font-size: 0.95rem;
+        display: inline-block; border: 1px solid #c3e6cb; margin-bottom: 0.5rem;
     }
     .badge-warn {
-        background: #fff3cd;
-        color: #856404;
-        padding: 0.55rem 1.1rem;
-        border-radius: 22px;
-        font-weight: 700;
-        font-size: 0.95rem;
-        display: inline-block;
-        border: 1px solid #ffeeba;
-        margin-bottom: 0.6rem;
+        background: #fff3cd; color: #856404; padding: 0.5rem 1rem;
+        border-radius: 22px; font-weight: 700; font-size: 0.95rem;
+        display: inline-block; border: 1px solid #ffeeba; margin-bottom: 0.5rem;
     }
 
-    /* ── Disease Gallery Card ── */
     .disease-item {
-        background: #f8fbf8;
-        border: 1px solid #d8f3dc;
-        border-radius: 10px;
-        padding: 0.8rem 1rem;
-        margin-bottom: 0.5rem;
+        background: #f8fbf8; border: 1px solid #d8f3dc; border-radius: 10px;
+        padding: 0.7rem 0.9rem; margin-bottom: 0.4rem;
     }
-    .disease-name {
-        font-weight: 700;
-        color: #1b4332;
-        font-size: 1rem;
-    }
-    .disease-desc {
-        font-size: 0.9rem;
-        color: #40916c;
-        margin-top: 0.2rem;
-    }
+    .disease-name { font-weight: 700; color: #1b4332; font-size: 0.95rem; }
+    .disease-desc { font-size: 0.88rem; color: #40916c; margin-top: 0.15rem; }
 </style>
 """, unsafe_allow_html=True)
 
 
-# ──────────────────────────────────────────────
-# Sidebar
-# ──────────────────────────────────────────────
+# ══════════════════════════════════════════════
+# SIDEBAR
+# ══════════════════════════════════════════════
 with st.sidebar:
     st.image("https://img.icons8.com/color/96/000000/rice-plant.png", width=70)
-    st.title("🌾 Paddy Farming AI")
-    st.caption("Horizon Campus — IT41043 Assignment")
+    st.title("🌾 PaddyAgri AI")
+    st.caption("Sri Lankan Agriculture Smart Portal")
 
     st.divider()
 
@@ -206,11 +100,11 @@ with st.sidebar:
     openrouter_key = os.getenv("OPENROUTER_API_KEY")
 
     if gemini_key:
-        st.success("🟢 Google Gemini Connected (Primary Reasoning)")
+        st.success("🟢 Google Gemini Ready")
     if groq_key:
-        st.success("🟢 Groq Llama Connected (Fast Router)")
+        st.success("🟢 Groq Llama Ready")
     if openrouter_key:
-        st.info("🔵 OpenRouter Connected (Fallback)")
+        st.info("🔵 OpenRouter Standby")
     if not (gemini_key or groq_key or openrouter_key):
         st.error("🔴 API Key Missing")
         st.info("Set `GEMINI_API_KEY` or `GROQ_API_KEY` in your `.env` file.")
@@ -223,11 +117,11 @@ with st.sidebar:
         value=False
     )
     if viva_mode:
-        st.warning("Viva Mode ON — raw A2A JSON traces visible in Tab 4.")
+        st.warning("Viva Mode ON — raw A2A JSON traces visible in assistant response tabs.")
 
     st.divider()
 
-    # 📞 1920 Agrarian Hotline
+    # 📞 Agrarian Helpline
     st.markdown("### 📞 Agrarian Helpline")
     st.info(
         "**Department of Agriculture — 1920**\n\n"
@@ -237,157 +131,144 @@ with st.sidebar:
     )
 
     st.divider()
+
+    # 🗑️ Clear Chat History
+    if st.button("🗑️ Clear Chat History", use_container_width=True):
+        st.session_state.messages = []
+        if "active_query" in st.session_state:
+            st.session_state["active_query"] = ""
+        st.rerun()
+
     st.markdown(
-        "🔗 [DOA Advisory PDF Corpus (Google Drive)]"
-        "(https://drive.google.com/drive/folders/1O6Teo6_gPBZOd27rtzAI84RSTKKU5er9?usp=sharing)"
+        "🔗 [DOA Advisory PDF Corpus](https://drive.google.com/drive/folders/1O6Teo6_gPBZOd27rtzAI84RSTKKU5er9?usp=sharing)"
     )
 
 
 # ══════════════════════════════════════════════
-# SECTION 1 — HERO HEADER + CHAT INPUT (Above the Fold)
+# SECTION 1 — HERO BANNER
 # ══════════════════════════════════════════════
-
 st.markdown("""
 <div class="hero-banner">
-    <div class="hero-title">🌾 Sri Lankan Paddy Farming AI Advisor</div>
+    <div class="hero-title">🌾 PaddyAgri AI - Sri Lankan Agriculture Smart Portal</div>
     <div class="hero-sub">Smart Paddy Disease Diagnosis & Fertilizer Recommendations for Sri Lankan Farmers</div>
 </div>
 """, unsafe_allow_html=True)
 
-# Session state
-if "active_query" not in st.session_state:
-    st.session_state["active_query"] = ""
-
-# Chat input — immediately visible
-user_input = st.text_area(
-    "Ask your farming question in Simple English:",
-    value=st.session_state["active_query"],
-    placeholder="Example: My paddy leaves have brown spots and are drying up. What should I do?",
-    height=100,
-    key="main_query_input"
-)
-
-col_btn1, col_btn2 = st.columns([4, 1])
-submit_button = col_btn1.button("🚀 Get AI Advisory", type="primary", use_container_width=True)
-clear_button = col_btn2.button("🗑️ Clear", use_container_width=True)
-
-if clear_button:
-    st.session_state["active_query"] = ""
-    st.rerun()
-
-# Quick Suggestion Chips
-st.markdown("##### 💡 Quick Suggestions — click any chip to auto-fill your question:")
+# ── Quick Suggestion Chips (always visible above chat) ──
+st.markdown("##### 💡 Quick Suggestions — click any chip to auto-submit:")
 chip1, chip2, chip3, chip4 = st.columns(4)
 
+quick_queries = {
+    "chip1": "What are the common symptoms of Paddy Blast disease and what chemical and organic treatments does the DOA recommend?",
+    "chip2": "What are the recommended Urea, TSP, and MOP fertilizer rates per acre for the Yala crop season in Sri Lanka?",
+    "chip3": "How do I identify and control Brown Planthopper (BPH) pest attacks in paddy fields using DOA certified methods?",
+    "chip4": "What quality standards, purity percentages, and germination rates are required for Certified Seed Paddy in Sri Lanka?"
+}
+
 if chip1.button("🍂 Paddy Blast Symptoms & Treatments", use_container_width=True):
-    st.session_state["active_query"] = (
-        "What are the common symptoms of Paddy Blast disease and what chemical "
-        "and organic treatments does the DOA recommend?"
-    )
+    st.session_state["pending_chip_query"] = quick_queries["chip1"]
     st.rerun()
 
 if chip2.button("🌱 Yala Season NPK Fertilizer Rates", use_container_width=True):
-    st.session_state["active_query"] = (
-        "What are the recommended Urea, TSP, and MOP fertilizer rates per acre "
-        "for the Yala crop season in Sri Lanka?"
-    )
+    st.session_state["pending_chip_query"] = quick_queries["chip2"]
     st.rerun()
 
-if chip3.button("🐛 Brown Planthopper (BPH) Pest Control", use_container_width=True):
-    st.session_state["active_query"] = (
-        "How do I identify and control Brown Planthopper (BPH) pest attacks "
-        "in paddy fields using DOA certified methods?"
-    )
+if chip3.button("🐛 Brown Planthopper (BPH) Control", use_container_width=True):
+    st.session_state["pending_chip_query"] = quick_queries["chip3"]
     st.rerun()
 
 if chip4.button("📜 Certified Seed Paddy Standards", use_container_width=True):
-    st.session_state["active_query"] = (
-        "What quality standards, purity percentages, and germination rates are "
-        "required for Certified Seed Paddy in Sri Lanka?"
-    )
+    st.session_state["pending_chip_query"] = quick_queries["chip4"]
     st.rerun()
 
+st.divider()
+
 
 # ══════════════════════════════════════════════
-# SECTION 2 & 3 — PROCESS STEPPER + RESPONSE TABS
+# SECTION 2 — CHAT HISTORY & MESSAGE RENDERING
 # ══════════════════════════════════════════════
 
-query_to_run = user_input.strip() if user_input.strip() else st.session_state.get("active_query", "")
+# Initialize chat history
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 
-if (submit_button or st.session_state["active_query"]) and query_to_run:
-    with st.spinner("🔄 Agents are searching agricultural handbooks and checking safety rules…"):
+# Function to process user query synchronously (with run_async wrapper)
+def run_orchestrator(query: str):
+    from core.agent_orchestrator import PaddyAgentOrchestrator
+    orchestrator = PaddyAgentOrchestrator()
+    return orchestrator.process_user_request(query)
+
+# Handle pending chip query (auto-submit without re-prompt)
+pending = st.session_state.pop("pending_chip_query", None)
+if pending:
+    # Immediately append user message and process
+    with st.chat_message("user"):
+        st.markdown(pending)
+    with st.spinner("🔄 Agents are searching agricultural handbooks in parallel and checking safety rules…"):
         try:
-            from core.agent_orchestrator import PaddyAgentOrchestrator
-            orchestrator = PaddyAgentOrchestrator()
-            response = orchestrator.process_user_request(query_to_run)
+            response = run_orchestrator(pending)
+        except Exception as e:
+            st.error(f"Runtime Error: {e}")
+            st.info("Check your `.env` API keys and agent orchestrator imports.")
+            st.stop()
 
-            st.success(f'✅ AI Advisory ready for: "{query_to_run}"')
+    st.session_state.messages.append({"role": "user", "content": pending})
+    st.session_state.messages.append({
+        "role": "assistant",
+        "content": response.final_synthesis,
+        "response_obj": response,
+        "query": pending
+    })
+    st.rerun()
 
-            # ── Progress Stepper ──
-            st.markdown("""
-            <div class="stepper-row">
-                <div class="step-card done">
-                    <div class="step-num">1</div><br>
-                    <div class="step-label">🔍 Identifying Query</div>
-                    <div class="step-detail">RouterAgent ✔</div>
-                </div>
-                <div class="step-arrow">➜</div>
-                <div class="step-card done">
-                    <div class="step-num">2</div><br>
-                    <div class="step-label">📚 Searching DOA PDF Corpus</div>
-                    <div class="step-detail">RAG Vector Search ✔</div>
-                </div>
-                <div class="step-arrow">➜</div>
-                <div class="step-card done">
-                    <div class="step-num">3</div><br>
-                    <div class="step-label">🛡️ Safety Verification</div>
-                    <div class="step-detail">ReflectionAgent ✔</div>
-                </div>
-                <div class="step-arrow">➜</div>
-                <div class="step-card done">
-                    <div class="step-num">4</div><br>
-                    <div class="step-label">📄 Generating Advisory</div>
-                    <div class="step-detail">Synthesis ✔</div>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
+# Render all chat messages
+for msg in st.session_state.messages:
+    if msg["role"] == "user":
+        with st.chat_message("user"):
+            st.markdown(msg["content"])
+    else:
+        with st.chat_message("assistant", avatar="🌾"):
+            # Fixed Output Duplication: Response text is rendered ONLY ONCE inside Tab 1.
+            # We no longer execute st.markdown(msg["content"]) outside the tabs.
+            response = msg.get("response_obj")
+            if response is None:
+                st.markdown(msg["content"])
+                continue
 
-            # ── Tabbed Response Area ──
+            # ── build 3-Tab View + optional 4th tab ──
             tab_labels = [
-                "📋 Farmer Advisory Report",
-                "📚 Official DOA Guidelines",
-                "🛡️ Safety & Regulatory Checks",
+                "📋 ගොවි උපදෙස් පත්‍රිකාව",
+                "📚 තහවුරු කළ රාජ්‍ය මූලාශ්‍ර",
+                "🛡️ ආරක්‍ෂිත සහ රාජ්‍ය ප්‍රමිතීන්"
             ]
             if viva_mode:
                 tab_labels.append("👨‍🏫 Viva Agent JSON Trace")
 
             tabs = st.tabs(tab_labels)
 
-            # TAB 1 — Advisory Report
+            # TAB 1 — Formatted Advisory Report & Download TXT
             with tabs[0]:
-                st.markdown("### 📋 Farmer Advisory & Recommended Action Plan")
                 st.markdown(response.final_synthesis)
                 st.download_button(
                     label="📥 Download Advisory Report (.txt)",
                     data=response.final_synthesis,
                     file_name="paddy_advisory_report.txt",
-                    mime="text/plain"
+                    mime="text/plain",
+                    key=f"dl_{id(response)}"
                 )
 
-            # TAB 2 — DOA Guidelines & RAG Citations
+            # TAB 2 — DOA PDF Citations & Page Numbers
             with tabs[1]:
                 st.markdown("### 📚 Official DOA Handbook Citations")
                 all_sources = []
-                if response.diagnostic_info:
+                if hasattr(response, "diagnostic_info") and response.diagnostic_info:
                     all_sources.extend(response.diagnostic_info.rag_sources)
-                if response.fertilizer_info:
+                if hasattr(response, "fertilizer_info") and response.fertilizer_info:
                     all_sources.extend(response.fertilizer_info.rag_sources)
 
                 if all_sources:
                     for i, src in enumerate(all_sources, 1):
-                        with st.expander(
-                            f"📄 Source #{i} — {src.filename} · Page {src.page}"
-                        ):
+                        with st.expander(f"📄 Source #{i} — {src.filename} · Page {src.page}"):
                             st.write(
                                 f"**Category:** `{src.category}` · "
                                 f"**Document:** `{src.filename}` · "
@@ -400,25 +281,25 @@ if (submit_button or st.session_state["active_query"]) and query_to_run:
                         "The advisory was compiled from general DOA guidelines."
                     )
 
-            # TAB 3 — Safety & Regulatory Checks
+            # TAB 3 — Pesticide Act & Fertilizer Ordinance Verification
             with tabs[2]:
                 st.markdown("### 🛡️ Pesticide Act & Fertilizer Ordinance Compliance")
-                refl = response.reflection_result
+                refl = response.reflection_result if hasattr(response, "reflection_result") else None
                 if refl:
                     if refl.all_checks_passed:
                         st.markdown(
                             '<div class="badge-pass">'
-                            '✅ ALL CHECKS PASSED — Recommendations comply with '
-                            'Pesticide Act No.33 and Fertilizer Ordinance limits'
-                            '</div>',
+                            "✅ ALL CHECKS PASSED — Recommendations comply with "
+                            "Pesticide Act No.33 and Fertilizer Ordinance limits"
+                            "</div>",
                             unsafe_allow_html=True
                         )
                     else:
                         st.markdown(
                             '<div class="badge-warn">'
-                            '⚠️ ATTENTION — Some chemicals may be restricted or '
-                            'require additional precautions under current regulations'
-                            '</div>',
+                            "⚠️ ATTENTION — Some chemicals may be restricted or "
+                            "require additional precautions under current regulations"
+                            "</div>",
                             unsafe_allow_html=True
                         )
 
@@ -441,31 +322,60 @@ if (submit_button or st.session_state["active_query"]) and query_to_run:
             if viva_mode:
                 with tabs[3]:
                     st.markdown("### 👨‍🏫 Viva Evaluator — Raw A2A Message Trace")
+                    intent_val = response.intent.value if hasattr(response, "intent") else "N/A"
+                    trace_len = len(response.message_trace) if hasattr(response, "message_trace") else 0
                     st.info(
-                        f"**Intent:** {response.intent.value} · "
-                        f"**Messages Exchanged:** {len(response.message_trace)}"
+                        f"**Intent:** {intent_val} · "
+                        f"**Messages Exchanged:** {trace_len}"
                     )
-                    for idx, msg in enumerate(response.message_trace, 1):
-                        with st.expander(
-                            f"✉️ #{idx}: {msg.sender} ➔ {msg.receiver} "
-                            f"[{msg.intent.value}]",
-                            expanded=True
-                        ):
-                            st.json({
-                                "message_id": msg.message_id,
-                                "sender": msg.sender,
-                                "receiver": msg.receiver,
-                                "intent": msg.intent.value,
-                                "timestamp": msg.timestamp,
-                                "payload": msg.payload,
-                            })
+                    if hasattr(response, "message_trace") and response.message_trace:
+                        for idx, mt in enumerate(response.message_trace, 1):
+                            with st.expander(
+                                f"✉️ #{idx}: {mt.sender} ➔ {mt.receiver} [{mt.intent.value}]",
+                                expanded=True
+                            ):
+                                st.json({
+                                    "message_id": mt.message_id,
+                                    "sender": mt.sender,
+                                    "receiver": mt.receiver,
+                                    "intent": mt.intent.value,
+                                    "timestamp": mt.timestamp,
+                                    "payload": mt.payload
+                                })
 
+
+# ══════════════════════════════════════════════
+# SECTION 3 — NATIVE CHAT INPUT
+# ══════════════════════════════════════════════
+
+user_query = st.chat_input(
+    "Ask your paddy farming question in English, Sinhala, or Singlish...",
+    key="chat_input_main"
+)
+
+if user_query and user_query.strip():
+    # Append & show user message
+    st.session_state.messages.append({"role": "user", "content": user_query.strip()})
+    with st.chat_message("user"):
+        st.markdown(user_query.strip())
+
+    # Run orchestrator
+    with st.spinner("🔄 Agents are searching agricultural handbooks in parallel and checking safety rules…"):
+        try:
+            response = run_orchestrator(user_query.strip())
         except Exception as e:
             st.error(f"Runtime Error: {e}")
-            st.info(
-                "Check that your `.env` file contains a valid API key and "
-                "the agent orchestrator modules are importable."
-            )
+            st.info("Check your `.env` API keys and agent orchestrator imports.")
+            st.stop()
+
+    # Append assistant response with full object
+    st.session_state.messages.append({
+        "role": "assistant",
+        "content": response.final_synthesis,
+        "response_obj": response,
+        "query": user_query.strip()
+    })
+    st.rerun()
 
 
 # ══════════════════════════════════════════════
@@ -563,11 +473,9 @@ with tool_col3:
         """, unsafe_allow_html=True)
 
 
-# ──────────────────────────────────────────────
-# Footer
-# ──────────────────────────────────────────────
+# ── Footer ──
 st.divider()
 st.caption(
-    "Horizon Campus — Module IT41043: Agentic AI Assignment · "
-    "Built with LangChain, FAISS, Groq & Streamlit"
+    "PaddyAgri AI - Sri Lankan Agriculture Smart Portal | "
+    "Built with LangChain, FAISS, Gemini, Groq & Streamlit"
 )
