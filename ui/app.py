@@ -195,13 +195,19 @@ with st.sidebar:
 
     # System Status
     st.subheader("⚙️ System Status")
+    gemini_key = os.getenv("GEMINI_API_KEY")
     groq_key = os.getenv("GROQ_API_KEY")
     openrouter_key = os.getenv("OPENROUTER_API_KEY")
-    if groq_key or openrouter_key:
-        st.success("🟢 AI Services Online")
-    else:
+
+    if gemini_key:
+        st.success("🟢 Google Gemini Connected (Primary Reasoning)")
+    if groq_key:
+        st.success("🟢 Groq Llama Connected (Fast Router)")
+    if openrouter_key:
+        st.info("🔵 OpenRouter Connected (Fallback)")
+    if not (gemini_key or groq_key or openrouter_key):
         st.error("🔴 API Key Missing")
-        st.info("Set `GROQ_API_KEY` or `OPENROUTER_API_KEY` in your `.env` file.")
+        st.info("Set `GEMINI_API_KEY` or `GROQ_API_KEY` in your `.env` file.")
 
     st.divider()
 
