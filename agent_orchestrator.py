@@ -9,10 +9,10 @@ from datetime import datetime
 from typing import List, Optional
 
 from agent_messages import (
-    AgentMessage, QueryIntent, AgentResponse, 
-    DiagnosticResult, FertilizerRecommendation
+    AgentMessage, QueryIntent, AgentResponse,
+    DiagnosticResult, FertilizerRecommendation, ReflectionResult
 )
-from agents import RouterAgent, DiagnosticAgent, FertilizerAgent
+from agents import RouterAgent, DiagnosticAgent, FertilizerAgent, ReflectionAgent
 
 
 class PaddyAgentOrchestrator:
@@ -28,6 +28,7 @@ class PaddyAgentOrchestrator:
         self.router_agent = RouterAgent()
         self.diagnostic_agent = DiagnosticAgent()
         self.fertilizer_agent = FertilizerAgent()
+        self.reflection_agent = ReflectionAgent()
 
     def process_user_request(self, user_query: str) -> AgentResponse:
         """
@@ -77,14 +78,30 @@ class PaddyAgentOrchestrator:
 
             fertilizer_info = self.fertilizer_agent.process(msg_to_fert)
 
-        # Step 3: Synthesis of Final Output
-        final_synthesis = self._build_synthesis(user_query, intent, diagnostic_info, fertilizer_info)
+        # Step 3: Reflection & Safety Verification (Reflection/Self-Critique Pattern)
+        reflection_result: Optional[ReflectionResult] = None
+        if diagnostic_info or fertilizer_info:
+            msg_to_refl = AgentMessage(
+                message_id=f"{session_id}_refl",
+                sender="Orchestrator",
+                receiver="ReflectionAgent",
+                intent=intent,
+                user_query=user_query,
+                payload={"task": "safety_and_regulatory_verification"}
+            )
+            message_trace.append(msg_to_refl)
+            print(f"[AGENT MESSAGE] {msg_to_refl.sender} -> {msg_to_refl.receiver} | Intent: {intent.value}")
+            reflection_result = self.reflection_agent.process(diagnostic_info, fertilizer_info)
+
+        # Step 4: Synthesis of Final Output
+        final_synthesis = self._build_synthesis(user_query, intent, diagnostic_info, fertilizer_info, reflection_result)
 
         return AgentResponse(
             query=user_query,
             intent=intent,
             diagnostic_info=diagnostic_info,
             fertilizer_info=fertilizer_info,
+            reflection_result=reflection_result,
             final_synthesis=final_synthesis,
             message_trace=message_trace
         )
@@ -94,7 +111,8 @@ class PaddyAgentOrchestrator:
         query: str,
         intent: QueryIntent,
         diag: Optional[DiagnosticResult],
-        fert: Optional[FertilizerRecommendation]
+        fert: Optional[FertilizerRecommendation],
+        refl: Optional[ReflectionResult] = None
     ) -> str:
         synthesis = f"🌾 **Sri Lankan Paddy Advisory Report**\n\n"
 
@@ -115,6 +133,19 @@ class PaddyAgentOrchestrator:
             synthesis += f"- **Application Timetable:**\n"
             for step in fert.application_schedule:
                 synthesis += f"  • {step}\n"
+            synthesis += "\n"
+
+        if refl:
+            status_icon = "✅" if refl.all_checks_passed else "⚠️"
+            synthesis += f"🛡️ **Safety & Regulatory Verification ({status_icon}):**\n"
+            if refl.warnings:
+                for w in refl.warnings:
+                    synthesis += f"- ⚠️ **Warning:** {w}\n"
+            else:
+                synthesis += f"- ✅ All fertilizer dosages and recommended treatments comply with Department of Agriculture limits.\n"
+            
+            if refl.regulatory_citations:
+                synthesis += f"- **Regulatory Citations:** {', '.join(refl.regulatory_citations[:2])}\n"
             synthesis += "\n"
 
         if not diag and not fert:
