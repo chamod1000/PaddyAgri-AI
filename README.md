@@ -1,7 +1,7 @@
 # Multi-Agent Paddy Disease Diagnostic and Fertilizer Recommendation System for Sri Lankan Farmers
 
 **Module:** IT41043 - Agentic AI (Horizon Campus)  
-**Branch:** `feature/rag-pipeline`
+**Branch:** `feature/agent-orchestration`
 
 ---
 
@@ -25,27 +25,81 @@ The domain knowledge base comprises **20+ PDF documents** (disease manuals, seed
 
 ---
 
-## 🛠 Tech Stack & RAG Architecture (Step 2 Implementation)
+## 🤖 Multi-Agent System Architecture (Step 3 Implementation)
 
-### 1. Document Chunking Strategy
-- **Text Splitter:** `RecursiveCharacterTextSplitter`
-- **Chunk Size:** `1000` characters (~150–200 words)
-- **Chunk Overlap:** `200` characters
-- **Separators:** `["\n\n", "\n", ". ", " ", ""]`
+### 1. Agentic Design Patterns Implemented (Mandatory Requirement 4a)
 
-#### 📖 Chunking Strategy Rationale (Academic Documentation)
-- **Context Preservation:** Paddy disease symptoms (e.g., lesions, discoloration) and chemical dosage instructions often span multiple sentences or tabular text blocks. A chunk size of 1000 characters provides sufficient contextual window for dense domain-specific information without fragmenting chemical names or diagnosis steps.
-- **Boundary Safety via Overlap:** The 200-character chunk overlap prevents critical facts positioned at page or paragraph boundaries from being severed across adjacent chunks, maintaining continuity for semantic retrieval.
-- **Recursive Splitting:** Splitting hierarchically by double line breaks (`\n\n`), single line breaks (`\n`), and sentence periods (`. `) preserves paragraph integrity and prevents mid-sentence breaks wherever possible.
+1. **Router Pattern (`agents.py` -> `RouterAgent`)**:
+   - Classifies user queries into distinct intent categories (`DISEASE_DIAGNOSIS`, `FERTILIZER_RECOMMENDATION`, `BOTH`, `GENERAL`).
+   - Uses a high-speed, low-latency model (`llama-3.1-8b-instant` via Groq) to route requests without latency overhead.
 
-### 2. Multilingual Embedding Model
-- **Model:** `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` via HuggingFace Embeddings.
-- **Rationale:** Sri Lankan agricultural publications and extension bulletins often contain a blend of English technical terms (e.g., *Pyricularia oryzae*, *NPK 14:14:14*) and Sinhala descriptions (e.g., *ගොයම් මැස්සා, පාළු රෝගය*). The 12-layer multilingual transformer projects Sinhala script and English query terms into a shared high-dimensional vector space, facilitating cross-lingual semantic search.
+2. **Tool-Use (ReAct) Pattern (`tools.py` & `agents.py`)**:
+   - `DiagnosticAgent` calls the `rag_search_tool` to dynamically query the FAISS vector database for relevant research bulletins.
+   - `FertilizerAgent` calls `fertilizer_calculator_tool` to compute NPK dosage per acre based on season and region.
 
-### 3. Local Vector Store
-- **Vector Database:** FAISS (Facebook AI Similarity Search) / Chroma
-- **Index Directory:** `./faiss_db/`
-- **Metadata Retained:** `category`, `filename`, `source`, `page`.
+3. **Planning & Task Decomposition Pattern (`agent_orchestrator.py`)**:
+   - Decomposes complex compound user queries (e.g. combined disease outbreak + fertilizer request) into parallel sub-tasks dispatched to specialized agents, and synthesizes the outputs into a coherent farmer advisory report.
+
+---
+
+### 2. Agent-to-Agent Communication Protocol (Mandatory Requirement 4b)
+
+Agents communicate using typed `AgentMessage` objects structured as follows:
+
+```json
+{
+  "message_id": "msg_8a12b3_diag",
+  "sender": "RouterAgent",
+  "receiver": "DiagnosticAgent",
+  "intent": "DISEASE_DIAGNOSIS",
+  "user_query": "ගොයම් පත්‍ර වල දුඹුරු පැහැ ලප ඇති වී ඇත",
+  "payload": {"task": "disease_diagnosis"},
+  "timestamp": "2026-07-23T01:50:00"
+}
+```
+
+#### 🔄 Message Flow Diagram
+```
+    Farmer Query
+         │
+         ▼
+ ┌───────────────┐
+ │  RouterAgent  │ (Fast Classification)
+ └───────┬───────┘
+         │
+  ───────┴─────────────────────────
+ │                                 │
+ ▼                                 ▼
+┌──────────────────┐     ┌───────────────────┐
+│ DiagnosticAgent  │     │  FertilizerAgent  │
+│  (ReAct + RAG)   │     │  (Calculator Tool)│
+└────────┬─────────┘     └─────────┬─────────┘
+         │                         │
+  ───────┴─────────────────────────
+         │
+         ▼
+ ┌───────────────┐
+ │ Orchestrator  │ (Final Synthesis & Report)
+ └───────────────┘
+```
+
+---
+
+### 3. Model Selection Strategy (Mandatory Requirement 4c)
+
+| Sub-task | Model (Provider) | Why Chosen |
+| :--- | :--- | :--- |
+| **Intent Routing & Classification** | `llama-3.1-8b-instant` (Groq) | Near-zero latency (~200ms), cost-effective for instant intent detection before deep processing. |
+| **Paddy Disease Synthesis** | `claude-3.5-sonnet` (OpenRouter) / `llama-3.3-70b-versatile` (Groq) | High reasoning quality for complex pathology diagnosis and Sinhala-English translation. |
+| **Fertilizer Dosage Calculations** | `llama-3.3-70b-versatile` (Groq) | Accurate structured JSON output generation and tabular calculation processing. |
+
+---
+
+## 🛠 RAG Architecture (Step 2 Implementation)
+
+- **Text Splitter:** `RecursiveCharacterTextSplitter` (`chunk_size=1000`, `chunk_overlap=200`)
+- **Multilingual Embedding Model:** `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`
+- **Vector Database:** Local FAISS index (`./faiss_db/`)
 
 ---
 
@@ -56,15 +110,13 @@ The domain knowledge base comprises **20+ PDF documents** (disease manuals, seed
 pip install -r requirements.txt
 ```
 
-### Running the RAG Pipeline & Retrieval Evaluation
-Execute the RAG script to index all PDFs and evaluate retrieval on 5 domain-specific queries:
+### Environment Configuration
+Copy `.env.example` to `.env` and add your API keys:
 ```bash
-python rag_pipeline.py
+cp .env.example .env
 ```
 
-### 🧪 Sample Evaluation Queries Included
-1. *"What are the common symptoms and control measures for Paddy Blast disease?"*
-2. *"What is the recommended NPK fertilizer application rate for Yala season paddy cultivation?"*
-3. *"ගොයම් පාළු රෝගය පාලනය කරන්නේ කෙසේද?"* (Sinhala language query)
-4. *"What are the quality standards and germination requirements for certified seed paddy in Sri Lanka?"*
-5. *"What are the quarantine regulations for importing paddy seed and agricultural items into Sri Lanka?"*
+### Running the Multi-Agent System
+```bash
+python agent_orchestrator.py
+```
