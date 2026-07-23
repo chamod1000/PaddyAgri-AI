@@ -1,0 +1,70 @@
+"""
+Agent-to-Agent Communication Schema Module
+Implements Mandatory Requirement 4b: Agent-to-Agent Structured Message Exchange Protocol
+Defines typed message payloads passed between RouterAgent, DiagnosticAgent, and FertilizerAgent.
+"""
+
+from datetime import datetime
+from enum import Enum
+from typing import Any, Dict, List, Optional
+from pydantic import BaseModel, Field
+
+
+class QueryIntent(str, Enum):
+    DISEASE_DIAGNOSIS = "DISEASE_DIAGNOSIS"
+    FERTILIZER_RECOMMENDATION = "FERTILIZER_RECOMMENDATION"
+    BOTH = "BOTH"
+    GENERAL = "GENERAL"
+
+
+class AgentMessage(BaseModel):
+    """
+    Structured message payload exchanged between agents.
+    Inspired by Agent Communication Protocols (A2A/MCP).
+    """
+    message_id: str = Field(..., description="Unique message tracking identifier")
+    sender: str = Field(..., description="Name of the sending agent")
+    receiver: str = Field(..., description="Name of the receiving agent")
+    intent: QueryIntent = Field(..., description="Classified intent of the request")
+    user_query: str = Field(..., description="Original user query in Sinhala or English")
+    payload: Dict[str, Any] = Field(default_factory=dict, description="Custom payload metadata")
+    timestamp: str = Field(default_factory=lambda: datetime.now().isoformat())
+
+
+class RAGContextChunk(BaseModel):
+    """Retrieved document metadata chunk from RAG vector store."""
+    content: str
+    filename: str
+    category: str
+    page: int
+    score: float
+
+
+class DiagnosticResult(BaseModel):
+    """Output produced by the Diagnostic Agent."""
+    suspected_disease: str
+    symptoms_identified: List[str]
+    treatment_recommended: List[str]
+    confidence_level: str
+    rag_sources: List[RAGContextChunk] = []
+
+
+class FertilizerRecommendation(BaseModel):
+    """Output produced by the Fertilizer Agent."""
+    season: str  # Yala or Maha
+    district_zone: str
+    urea_dosage_per_acre_kg: float
+    tsp_dosage_per_acre_kg: float
+    mop_dosage_per_acre_kg: float
+    application_schedule: List[str]
+    rag_sources: List[RAGContextChunk] = []
+
+
+class AgentResponse(BaseModel):
+    """Final synthesized response returned to the user."""
+    query: str
+    intent: QueryIntent
+    diagnostic_info: Optional[DiagnosticResult] = None
+    fertilizer_info: Optional[FertilizerRecommendation] = None
+    final_synthesis: str
+    message_trace: List[AgentMessage] = []
