@@ -16,4 +16,4 @@ if __name__ == "__main__":
         run_sample_evaluations()
     else:
         print("[INFO] Launching Streamlit Web App from ui/app.py...")
-        os.system("python -m streamlit run ui/app.py")
+        os.system(f'"{sys.executable}" -m streamlit run ui/app.py')
