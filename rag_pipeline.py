@@ -30,6 +30,10 @@ FAISS_INDEX_DIR = BASE_DIR / "faiss_db"
 EMBEDDING_MODEL_NAME = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 
 
+import sys
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+
 def load_pdf_documents(data_path: Path) -> List[Document]:
     """
     Recursively scans the Data/PDF directory and loads all PDF files.
@@ -56,9 +60,9 @@ def load_pdf_documents(data_path: Path) -> List[Document]:
                 doc.metadata["filename"] = pdf_path.name
                 doc.metadata["source"] = str(pdf_path)
             documents.extend(loaded_docs)
-            print(f"  └ Loaded {len(loaded_docs)} pages from [{category}] {pdf_path.name}")
+            print(f"  -> Loaded {len(loaded_docs)} pages from [{category}] {pdf_path.name}")
         except Exception as e:
-            print(f"  └ [ERROR] Failed to load {pdf_path.name}: {e}")
+            print(f"  -> [ERROR] Failed to load {pdf_path.name}: {e}")
 
     print(f"[INFO] Total pages loaded across all PDFs: {len(documents)}")
     return documents
@@ -119,7 +123,12 @@ def create_or_load_vector_store(
         )
 
     if not chunks:
-        raise ValueError("Chunks must be provided when building a new vector store.")
+        print("[INFO] FAISS index missing on disk. Auto-loading PDF documents to build vector store...")
+        documents = load_pdf_documents(DATA_DIR)
+        if documents:
+            chunks = chunk_documents(documents, chunk_size=1000, chunk_overlap=200)
+        else:
+            raise ValueError("No PDF documents found in Data/PDF/ to build vector store.")
 
     print("[INFO] Generating embeddings and building FAISS vector database...")
     vector_store = FAISS.from_documents(chunks, embeddings)
