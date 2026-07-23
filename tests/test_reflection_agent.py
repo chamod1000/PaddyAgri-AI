@@ -4,8 +4,8 @@ Tests Reflection & Self-Critique Pattern logic independently.
 """
 
 import unittest
-from agent_messages import DiagnosticResult, FertilizerRecommendation, SafetyVerdict, ReflectionResult
-from agents import ReflectionAgent
+from core.agent_messages import DiagnosticResult, FertilizerRecommendation, SafetyVerdict, ReflectionResult
+from core.agents import ReflectionAgent
 
 
 class TestReflectionAgent(unittest.TestCase):

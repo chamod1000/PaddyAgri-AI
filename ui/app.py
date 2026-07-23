@@ -214,7 +214,7 @@ query_to_run = user_input.strip() if user_input.strip() else st.session_state["a
 if (submit_button or st.session_state["active_query"]) and query_to_run:
     with st.spinner("🔄 Multi-Agent System orchestrating diagnosis, RAG search & reflection verification..."):
         try:
-            from agent_orchestrator import PaddyAgentOrchestrator
+            from core.agent_orchestrator import PaddyAgentOrchestrator
             orchestrator = PaddyAgentOrchestrator()
             response = orchestrator.process_user_request(query_to_run)
             

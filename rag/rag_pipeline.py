@@ -22,7 +22,7 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
 
 # Path Definitions
-BASE_DIR = Path(__file__).resolve().parent
+BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = BASE_DIR / "Data" / "PDF"
 FAISS_INDEX_DIR = BASE_DIR / "faiss_db"
 

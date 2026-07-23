@@ -8,11 +8,11 @@ import uuid
 from datetime import datetime
 from typing import List, Optional
 
-from agent_messages import (
+from core.agent_messages import (
     AgentMessage, QueryIntent, AgentResponse,
     DiagnosticResult, FertilizerRecommendation, ReflectionResult
 )
-from agents import RouterAgent, DiagnosticAgent, FertilizerAgent, ReflectionAgent
+from core.agents import RouterAgent, DiagnosticAgent, FertilizerAgent, ReflectionAgent
 
 
 class PaddyAgentOrchestrator:
