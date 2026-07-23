@@ -1,12 +1,12 @@
 # Multi-Agent Paddy Disease Diagnostic and Fertilizer Recommendation System for Sri Lankan Farmers
 
 **Module:** IT41043 - Agentic AI (Horizon Campus)  
-**Branch:** `feature/agent-orchestration`
+**Branches:** `master` | `feature/streamlit-ui` | `feature/agent-orchestration` | `feature/rag-pipeline`
 
 ---
 
 ## 📌 Project Overview
-An intelligent multi-agent system designed to assist Sri Lankan farmers and agricultural officers in diagnosing paddy plant diseases, recommending optimal fertilizer regimens (suited for Yala and Maha seasons), and retrieving authoritative agricultural knowledge from local policy guidelines, research papers, and technical bulletins.
+An intelligent multi-agent system designed to assist Sri Lankan farmers and agricultural extension officers in diagnosing paddy plant diseases, recommending optimal fertilizer regimens (suited for Yala and Maha seasons), and retrieving authoritative agricultural knowledge from local policy guidelines, research papers, and technical bulletins.
 
 ---
 
@@ -25,7 +25,7 @@ The domain knowledge base comprises **20+ PDF documents** (disease manuals, seed
 
 ---
 
-## 🤖 Multi-Agent System Architecture (Step 3 Implementation)
+## 🤖 Multi-Agent System Architecture
 
 ### 1. Agentic Design Patterns Implemented (Mandatory Requirement 4a)
 
@@ -38,7 +38,10 @@ The domain knowledge base comprises **20+ PDF documents** (disease manuals, seed
    - `FertilizerAgent` calls `fertilizer_calculator_tool` to compute NPK dosage per acre based on season and region.
 
 3. **Planning & Task Decomposition Pattern (`agent_orchestrator.py`)**:
-   - Decomposes complex compound user queries (e.g. combined disease outbreak + fertilizer request) into parallel sub-tasks dispatched to specialized agents, and synthesizes the outputs into a coherent farmer advisory report.
+   - Decomposes complex compound user queries (e.g. combined disease outbreak + fertilizer request) into parallel sub-tasks dispatched to specialized agents.
+
+4. **Reflection & Self-Critique Pattern (`agents.py` -> `ReflectionAgent`)**:
+   - Acts as a Safety & Quality Verifier that double-checks recommended pesticide/fertilizer recommendations against Sri Lankan Department of Agriculture (DoA) environmental safety guidelines and biosecurity regulations before final output synthesis.
 
 ---
 
@@ -78,6 +81,11 @@ Agents communicate using typed `AgentMessage` objects structured as follows:
   ───────┴─────────────────────────
          │
          ▼
+ ┌──────────────────┐
+ │ ReflectionAgent  │ (Safety & DoA Regulatory Verification)
+ └───────┬──────────┘
+         │
+         ▼
  ┌───────────────┐
  │ Orchestrator  │ (Final Synthesis & Report)
  └───────────────┘
@@ -87,11 +95,11 @@ Agents communicate using typed `AgentMessage` objects structured as follows:
 
 ### 3. Model Selection Strategy (Mandatory Requirement 4c)
 
-| Sub-task | Model (Provider) | Why Chosen |
-| :--- | :--- | :--- |
-| **Intent Routing & Classification** | `llama-3.1-8b-instant` (Groq) | Near-zero latency (~200ms), cost-effective for instant intent detection before deep processing. |
-| **Paddy Disease Synthesis** | `claude-3.5-sonnet` (OpenRouter) / `llama-3.3-70b-versatile` (Groq) | High reasoning quality for complex pathology diagnosis and Sinhala-English translation. |
-| **Fertilizer Dosage Calculations** | `llama-3.3-70b-versatile` (Groq) | Accurate structured JSON output generation and tabular calculation processing. |
+| Sub-task | Model (Provider) | Latency | Cost / 1M Tokens | Context Window | Reasoning Quality |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Intent Routing & Classification** | `llama-3.1-8b-instant` (Groq) | ~200 ms | $0.05 | 128k | Near-free, sufficient for rapid intent classification. |
+| **Paddy Disease Synthesis** | `claude-3.5-sonnet` (OpenRouter) / `llama-3.3-70b` (Groq) | ~1.2 s | $3.00 | 200k | Exceptional reasoning quality for complex pathology & Sinhala translation. |
+| **Fertilizer Dosage Calculations** | `llama-3.3-70b-versatile` (Groq) | ~600 ms | $0.59 | 128k | High precision structured output generation and tabular calculation processing. |
 
 ---
 
@@ -103,20 +111,34 @@ Agents communicate using typed `AgentMessage` objects structured as follows:
 
 ---
 
+## 💻 Streamlit Web Application & Deployment (Step 4 Implementation)
+
+- **Interactive UI (`app.py`)**: Includes Quick Sample Queries (Paddy Blast, Yala Fertilizer, Sinhala Query, Seed Paddy Purity).
+- **Live Agent Message Trace Panel**: Displays real-time JSON message exchange between agents.
+- **RAG Citation & Source Quote Highlighting**: Shows exact PDF source, page number, and quote for diagnostic evidence.
+- **Downloadable Advisory Report**: Exports generated farmer advisory reports as text/PDF files.
+
+---
+
 ## 🚀 Setup & Execution Guide
 
-### Prerequisite Installation
+### 1. Prerequisite Installation
 ```bash
 pip install -r requirements.txt
 ```
 
-### Environment Configuration
+### 2. Environment Configuration
 Copy `.env.example` to `.env` and add your API keys:
 ```bash
 cp .env.example .env
 ```
 
-### Running the Multi-Agent System
+### 3. Running the Streamlit Web App
+```bash
+streamlit run app.py
+```
+
+### 4. Running the Multi-Agent System in CLI
 ```bash
 python agent_orchestrator.py
 ```
