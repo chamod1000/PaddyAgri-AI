@@ -4,6 +4,13 @@ Farmer-Centric Web Application (ui/app.py)
 
 Module: IT41043 - Agentic AI (Horizon Campus)
 Author: Chamod
+
+Layout (Human-Centered, Above-the-Fold Priority):
+  1. Hero Header + Chat Input + Quick Chips    (top — immediate interaction)
+  2. Progress Stepper                          (after submit)
+  3. 3-Tab Response Area                       (middle — results)
+  4. Farmer Utility Tools                      (bottom — calculators, cards, gallery)
+  Sidebar: System status, Viva toggle, 1920 hotline, corpus link
 """
 
 import os
@@ -13,314 +20,542 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Streamlit Page Configuration
+# ──────────────────────────────────────────────
+# Page Config
+# ──────────────────────────────────────────────
 st.set_page_config(
-    page_title="PaddyAgri AI - Sri Lankan Paddy Advisory System",
+    page_title="Sri Lankan Paddy Farming AI Advisor",
     page_icon="🌾",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for Modern Emerald & Paddy Gold Aesthetic
+# ──────────────────────────────────────────────
+# Custom CSS — Paddy Emerald / Mint / Cream
+# High contrast, min 16px, glassmorphism cards
+# ──────────────────────────────────────────────
 st.markdown("""
 <style>
-    /* Global Container Styling */
-    .main-header {
+    /* ── Base Typography ── */
+    html, body, [class*="css"] {
+        font-size: 16px;
+        color: #1b4332;
+    }
+
+    /* ── Hero Banner ── */
+    .hero-banner {
+        background: linear-gradient(135deg, #1b4332 0%, #2d6a4f 60%, #40916c 100%);
+        color: #ffffff;
+        padding: 2.2rem 2rem 1.6rem;
+        border-radius: 18px;
+        text-align: center;
+        border-bottom: 5px solid #e9c46a;
+        box-shadow: 0 8px 30px rgba(27, 67, 50, 0.25);
+        margin-bottom: 1.2rem;
+    }
+    .hero-title {
         font-size: 2.2rem;
         font-weight: 800;
-        color: #0b3c26;
-        background: linear-gradient(135deg, #d8f3dc 0%, #b7e4c7 50%, #95d5b2 100%);
-        padding: 1.2rem 1.8rem;
-        border-radius: 16px;
-        border-left: 8px solid #2d6a4f;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-        margin-bottom: 1.5rem;
+        letter-spacing: -0.5px;
     }
-    .sub-header {
+    .hero-sub {
         font-size: 1.05rem;
+        color: #e9c46a;
+        font-weight: 500;
+        margin-top: 0.4rem;
+    }
+
+    /* ── Glassmorphism Card ── */
+    .glass-card {
+        background: rgba(248, 251, 248, 0.85);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(183, 228, 199, 0.5);
+        border-radius: 14px;
+        padding: 1.4rem;
+        box-shadow: 0 4px 24px rgba(27, 67, 50, 0.06);
+        margin-bottom: 0.8rem;
+    }
+    .glass-card-title {
+        font-weight: 700;
+        font-size: 1.08rem;
         color: #1b4332;
-        font-weight: 600;
-        margin-top: 0.2rem;
-    }
-    
-    /* Feature Highlight Cards */
-    .feature-box {
-        background-color: #f4fbf7;
-        border: 1px solid #b7e4c7;
-        border-radius: 10px;
-        padding: 1rem;
-        text-align: center;
-    }
-    .feature-title {
-        font-weight: 700;
-        color: #2d6a4f;
-        font-size: 1.05rem;
-    }
-    
-    /* Progress Stepper Styling */
-    .step-box {
-        background-color: #ffffff;
-        border: 1px solid #c7f9cc;
-        border-radius: 12px;
-        padding: 0.8rem 1rem;
         margin-bottom: 0.5rem;
-        box-shadow: 0 2px 8px rgba(45, 106, 79, 0.05);
     }
-    
-    /* Safety Badge Styling */
-    .badge-pass {
-        background-color: #d4edda;
-        color: #155724;
-        padding: 0.4rem 0.8rem;
-        border-radius: 20px;
+    .glass-card p, .glass-card li {
+        font-size: 0.95rem;
+        color: #2d6a4f;
+        line-height: 1.55;
+    }
+
+    /* ── Progress Stepper ── */
+    .stepper-row {
+        display: flex;
+        align-items: stretch;
+        gap: 0.6rem;
+        margin: 1rem 0 1.5rem;
+    }
+    .step-card {
+        flex: 1;
+        background: #f8fbf8;
+        border: 2px solid #b7e4c7;
+        border-radius: 12px;
+        padding: 1rem 0.7rem;
+        text-align: center;
+        position: relative;
+    }
+    .step-card.done {
+        border-color: #2d6a4f;
+        background: #d8f3dc;
+    }
+    .step-num {
+        display: inline-block;
+        background: #2d6a4f;
+        color: #fff;
+        width: 28px; height: 28px;
+        line-height: 28px;
+        border-radius: 50%;
         font-weight: 700;
-        font-size: 0.9rem;
+        font-size: 0.85rem;
+        margin-bottom: 0.4rem;
+    }
+    .step-label {
+        font-weight: 700;
+        font-size: 0.92rem;
+        color: #1b4332;
+    }
+    .step-detail {
+        font-size: 0.78rem;
+        color: #555;
+        margin-top: 0.15rem;
+    }
+    .step-arrow {
+        display: flex;
+        align-items: center;
+        font-size: 1.3rem;
+        color: #2d6a4f;
+        padding: 0 0.1rem;
+    }
+
+    /* ── Safety Badges ── */
+    .badge-pass {
+        background: #d4edda;
+        color: #155724;
+        padding: 0.55rem 1.1rem;
+        border-radius: 22px;
+        font-weight: 700;
+        font-size: 0.95rem;
+        display: inline-block;
+        border: 1px solid #c3e6cb;
+        margin-bottom: 0.6rem;
     }
     .badge-warn {
-        background-color: #fff3cd;
+        background: #fff3cd;
         color: #856404;
-        padding: 0.4rem 0.8rem;
-        border-radius: 20px;
+        padding: 0.55rem 1.1rem;
+        border-radius: 22px;
         font-weight: 700;
+        font-size: 0.95rem;
+        display: inline-block;
+        border: 1px solid #ffeeba;
+        margin-bottom: 0.6rem;
+    }
+
+    /* ── Disease Gallery Card ── */
+    .disease-item {
+        background: #f8fbf8;
+        border: 1px solid #d8f3dc;
+        border-radius: 10px;
+        padding: 0.8rem 1rem;
+        margin-bottom: 0.5rem;
+    }
+    .disease-name {
+        font-weight: 700;
+        color: #1b4332;
+        font-size: 1rem;
+    }
+    .disease-desc {
         font-size: 0.9rem;
+        color: #40916c;
+        margin-top: 0.2rem;
     }
 </style>
 """, unsafe_allow_html=True)
 
 
-# Sidebar Configuration
+# ──────────────────────────────────────────────
+# Sidebar
+# ──────────────────────────────────────────────
 with st.sidebar:
-    st.image("https://img.icons8.com/color/96/000000/rice-plant.png", width=75)
-    st.title("🌾 PaddyAgri AI")
-    st.caption(" Horizon Campus — IT41043 Assignment")
-    
+    st.image("https://img.icons8.com/color/96/000000/rice-plant.png", width=70)
+    st.title("🌾 Paddy Farming AI")
+    st.caption("Horizon Campus — IT41043 Assignment")
+
     st.divider()
-    st.subheader("⚙️ පද්ධති සක්‍රීයතාව (System Status)")
-    
+
+    # System Status
+    st.subheader("⚙️ System Status")
     groq_key = os.getenv("GROQ_API_KEY")
     openrouter_key = os.getenv("OPENROUTER_API_KEY")
-    
     if groq_key or openrouter_key:
-        st.success("🟢 AI සේවාව සක්‍රීයයි (AI System Ready)")
+        st.success("🟢 AI Services Online")
     else:
-        st.error("🔴 API Key එක නොමැත")
-        st.info("කරුණාකර `.env` ගොනුවේ `GROQ_API_KEY` සටහන් කරන්න.")
+        st.error("🔴 API Key Missing")
+        st.info("Set `GROQ_API_KEY` or `OPENROUTER_API_KEY` in your `.env` file.")
 
     st.divider()
-    
-    # 👨‍🏫 Viva Evaluator / Developer Mode Toggle
-    viva_mode = st.checkbox("👨‍🏫 Viva / Dev Mode (Show Raw Agent JSON Trace)", value=False)
+
+    # Viva Evaluator Toggle
+    viva_mode = st.checkbox(
+        "👨‍🏫 Viva Evaluator Mode (Show Raw Agent JSON Trace)",
+        value=False
+    )
     if viva_mode:
-        st.warning("Viva Evaluator Mode Enabled: Technical JSON Message Traces will be displayed.")
+        st.warning("Viva Mode ON — raw A2A JSON traces visible in Tab 4.")
 
     st.divider()
-    
-    # 📞 Agrarian Hotline Card
-    st.markdown("### 📞 ගොවිජන සහන සේවය")
-    st.info("""
-    **කෘෂිකර්ම දෙපාර්තමේන්තු ක්ෂණික ඇමතුම්:**
-    ☎️ **1920** (ගොවි සහන පියස)  
-    🌐 [කෘෂිකර්ම දෙපාර්තමේන්තුව](http://www.doa.gov.lk)
-    """)
+
+    # 📞 1920 Agrarian Hotline
+    st.markdown("### 📞 Agrarian Helpline")
+    st.info(
+        "**Department of Agriculture — 1920**\n\n"
+        "☎️ **1920** (Govi Sahana Piyasa)\n\n"
+        "🌐 [doa.gov.lk](http://www.doa.gov.lk)\n\n"
+        "*Free expert advice for Sri Lankan farmers.*"
+    )
 
     st.divider()
-    st.markdown("🔗 [කෘෂිකාර්මික උපදෙස් PDF මූලාශ්‍ර (Google Drive)](https://drive.google.com/drive/folders/1O6Teo6_gPBZOd27rtzAI84RSTKKU5er9?usp=sharing)")
+    st.markdown(
+        "🔗 [DOA Advisory PDF Corpus (Google Drive)]"
+        "(https://drive.google.com/drive/folders/1O6Teo6_gPBZOd27rtzAI84RSTKKU5er9?usp=sharing)"
+    )
 
 
-# Header Banner
+# ══════════════════════════════════════════════
+# SECTION 1 — HERO HEADER + CHAT INPUT (Above the Fold)
+# ══════════════════════════════════════════════
+
 st.markdown("""
-<div class="main-header">
-    <div>🌾 ශ්‍රී ලාංකික ගොවිජන AI උපදේශක පද්ධතිය</div>
-    <div class="sub-header">Sri Lankan Paddy Disease Diagnostic & Fertilizer Advisory Portal</div>
+<div class="hero-banner">
+    <div class="hero-title">🌾 Sri Lankan Paddy Farming AI Advisor</div>
+    <div class="hero-sub">Smart Paddy Disease Diagnosis & Fertilizer Recommendations for Sri Lankan Farmers</div>
 </div>
 """, unsafe_allow_html=True)
 
-
-# Top Interactive Practical Widgets
-col_widget1, col_widget2, col_widget3 = st.columns([1.2, 1, 1])
-
-with col_widget1:
-    st.markdown("#### 💰 පොහොර වියදම් ගණකය (LKR Calculator)")
-    with st.expander("ඔබේ කුඹුරට අවශ්‍ය පොහොර ප්‍රමාණය හා මුදල ගණනය කරන්න", expanded=False):
-        acres = st.number_input("කුඹුරේ ප්‍රමාණය (අක්කර):", min_value=0.5, max_value=50.0, value=2.0, step=0.5)
-        calc_season = st.selectbox("වගා කන්නය:", ["යල කන්නය (Yala Season)", "මහ කන්නය (Maha Season)"])
-        
-        if "යල" in calc_season:
-            urea_bags = round((acres * 50) / 50, 1)
-            tsp_bags = round((acres * 25) / 50, 1)
-            mop_bags = round((acres * 25) / 50, 1)
-        else:
-            urea_bags = round((acres * 65) / 50, 1)
-            tsp_bags = round((acres * 30) / 50, 1)
-            mop_bags = round((acres * 30) / 50, 1)
-
-        cost_lkr = (urea_bags + tsp_bags + mop_bags) * 2500
-        
-        st.write(f"• **යූරියා (50kg මලු):** {urea_bags} යි")
-        st.write(f"• **TSP (50kg මලු):** {tsp_bags} යි")
-        st.write(f"• **MOP (50kg මලු):** {mop_bags} යි")
-        st.success(f"**අනුමාන සහනාධාර පිරිවැය:** LKR {cost_lkr:,.2f}")
-
-with col_widget2:
-    st.markdown("#### 🗓️ කන්නයේ වගා උපදේශක")
-    st.markdown("""
-    <div class="feature-box">
-        <div class="feature-title">🌾 වත්මන් කාලසීමාව: යල කන්නයේ අස්වැන්න නෙලීම</div>
-        <p style="margin-top:0.4rem; font-size:0.88rem;">මහ කන්නය සඳහා බිම් සකස් කිරීම සහ පිරිසිදු බිත්තර වී තෝරා ගැනීම සිදුකරන්න.</p>
-    </div>
-    """, unsafe_allow_html=True)
-
-with col_widget3:
-    st.markdown("#### 🖼️ ගොයම් රෝග හඳුනාගැනීම")
-    with st.expander("ප්‍රධාන ගොයම් රෝග හඳුනාගන්න", expanded=False):
-        st.markdown("- **ගොයම් පාළු රෝගය (Blast):** පත්‍ර වල කපොලු හැඩැති දුඹුරු දාර සහිත ලප.")
-        st.markdown("- **පැළ මැක්සා (BPH):** ගොයම් පඳුරු කහ පැහැ වී වේලී යාම.")
-        st.markdown("- **කොළ පාළු රෝගය (Sheath Blight):** කඳ ආශ්‍රිතව තෙතමනය සහිත පාලු ලප.")
-
-
-st.divider()
-
-# Session State for Active Query
+# Session state
 if "active_query" not in st.session_state:
     st.session_state["active_query"] = ""
 
-# Farmer Interactive Symptom Selector
-st.markdown("##### 💡 ක්ෂණික ප්‍රශ්න සහ රෝග ලක්ෂණ තෝරන්න (Select Symptoms):")
-col_q1, col_q2, col_q3, col_q4 = st.columns(4)
-
-if col_q1.button("🍂 ගොයම් පාළු රෝග ලක්ෂණ"):
-    st.session_state["active_query"] = "ගොයම් පත්‍ර වල දුඹුරු පාළු ලප ඇති වී ඇත. මෙයට ප්‍රතිකාර සහ පාලන ක්‍රම මොනවාද?"
-
-if col_q2.button("🌱 යල කන්නයේ පොහොර මාත්‍රාව"):
-    st.session_state["active_query"] = "පොළොන්නරුව දිස්ත්‍රික්කයේ යල කන්නයේ ගොයම් සඳහා නිර්දේශිත යූරියා, TSP සහ MOP පොහොර ප්‍රමාණය කොපමණද?"
-
-if col_q3.button("🐛 පැළ මැක්සා හා පළිබෝධ"):
-    st.session_state["active_query"] = "ගොයම් පඳුරු කහ පැහැ වී කෘමීන් බෝ වී ඇත. පාලනය කරන්නේ කෙසේද?"
-
-if col_q4.button("📜 සහතික කළ බිත්තර වී"):
-    st.session_state["active_query"] = "ශ්‍රී ලංකාවේ සහතික කළ බිත්තර වී සඳහා පැළවීමේ ප්‍රතිශතය සහ ප්‍රමිතීන් මොනවාද?"
-
-
-# Input Text Box
+# Chat input — immediately visible
 user_input = st.text_area(
-    "ඔබගේ ගොවිතැන් ගැටලුව මෙහි සටහන් කරන්න (සිංහලෙන් හෝ ඉංග්‍රීසියෙන්):",
+    "Ask your farming question in Simple English:",
     value=st.session_state["active_query"],
-    placeholder="උදා: මගේ ගොයම් කොළ කහ වී දුඹුරු ලප ඇති වී ඇත. යෙදිය යුතු පොහොර සහ ඖෂධ මොනවාද?",
-    height=100
+    placeholder="Example: My paddy leaves have brown spots and are drying up. What should I do?",
+    height=100,
+    key="main_query_input"
 )
 
-col_btn1, col_btn2 = st.columns([3, 1])
-submit_button = col_btn1.button("🚀 AI උපදෙස් ලබාගන්න (Get AI Advisory)", type="primary", use_container_width=True)
-clear_button = col_btn2.button("🗑️ මකන්න (Clear)", use_container_width=True)
+col_btn1, col_btn2 = st.columns([4, 1])
+submit_button = col_btn1.button("🚀 Get AI Advisory", type="primary", use_container_width=True)
+clear_button = col_btn2.button("🗑️ Clear", use_container_width=True)
 
 if clear_button:
     st.session_state["active_query"] = ""
     st.rerun()
 
-# Execution & Response Render
-query_to_run = user_input.strip() if user_input.strip() else st.session_state["active_query"]
+# Quick Suggestion Chips
+st.markdown("##### 💡 Quick Suggestions — click any chip to auto-fill your question:")
+chip1, chip2, chip3, chip4 = st.columns(4)
+
+if chip1.button("🍂 Paddy Blast Symptoms & Treatments", use_container_width=True):
+    st.session_state["active_query"] = (
+        "What are the common symptoms of Paddy Blast disease and what chemical "
+        "and organic treatments does the DOA recommend?"
+    )
+    st.rerun()
+
+if chip2.button("🌱 Yala Season NPK Fertilizer Rates", use_container_width=True):
+    st.session_state["active_query"] = (
+        "What are the recommended Urea, TSP, and MOP fertilizer rates per acre "
+        "for the Yala crop season in Sri Lanka?"
+    )
+    st.rerun()
+
+if chip3.button("🐛 Brown Planthopper (BPH) Pest Control", use_container_width=True):
+    st.session_state["active_query"] = (
+        "How do I identify and control Brown Planthopper (BPH) pest attacks "
+        "in paddy fields using DOA certified methods?"
+    )
+    st.rerun()
+
+if chip4.button("📜 Certified Seed Paddy Standards", use_container_width=True):
+    st.session_state["active_query"] = (
+        "What quality standards, purity percentages, and germination rates are "
+        "required for Certified Seed Paddy in Sri Lanka?"
+    )
+    st.rerun()
+
+
+# ══════════════════════════════════════════════
+# SECTION 2 & 3 — PROCESS STEPPER + RESPONSE TABS
+# ══════════════════════════════════════════════
+
+query_to_run = user_input.strip() if user_input.strip() else st.session_state.get("active_query", "")
 
 if (submit_button or st.session_state["active_query"]) and query_to_run:
-    with st.spinner("🔄 AI නියෝජිතයින් (Multi-Agents) ඔබේ ගැටලුව පරීක්ෂා කරමින් පවතී..."):
+    with st.spinner("🔄 Agents are searching agricultural handbooks and checking safety rules…"):
         try:
             from core.agent_orchestrator import PaddyAgentOrchestrator
             orchestrator = PaddyAgentOrchestrator()
             response = orchestrator.process_user_request(query_to_run)
-            
-            st.success(f"✅ \"{query_to_run}\" සඳහා කෘෂිකාර්මික AI විශ්ලේෂණය සාර්ථකව නිම විය!")
-            
-            # Farmer Friendly Progress Stepper Overview
-            st.markdown("#### 🔄 AI පද්ධතියේ ක්‍රියාකාරී පියවර (Process Summary):")
-            st_col1, st_col2, st_col3, st_col4 = st.columns(4)
-            st_col1.markdown('<div class="step-box"><b>1. 🔍 ප්‍රශ්නය හඳුනාගැනීම</b><br><small>RouterAgent</small></div>', unsafe_allow_html=True)
-            st_col2.markdown('<div class="step-box"><b>2. 📚 පොත්පත් පරීක්ෂාව</b><br><small>RAG Vector Search</small></div>', unsafe_allow_html=True)
-            st_col3.markdown('<div class="step-box"><b>3. 🛡️ සුරක්ෂිතතා පරීක්ෂාව</b><br><small>ReflectionAgent</small></div>', unsafe_allow_html=True)
-            st_col4.markdown('<div class="step-box"><b>4. 📄 උපදෙස් සකස් කිරීම</b><br><small>Final Synthesis</small></div>', unsafe_allow_html=True)
 
-            st.divider()
+            st.success(f'✅ AI Advisory ready for: "{query_to_run}"')
 
-            # Main Farmer Friendly Tabs
-            tab_names = [
-                "📋 ගොවි උපදෙස් පත්‍රිකාව (Advisory Report)", 
-                "📚 තහවුරු කළ රාජ්‍ය මූලාශ්‍ර (DOA Guidelines)", 
-                "🛡️ ආරක්‍ෂිත සහ රාජ්‍ය ප්‍රමිතීන් (Safety Checks)"
+            # ── Progress Stepper ──
+            st.markdown("""
+            <div class="stepper-row">
+                <div class="step-card done">
+                    <div class="step-num">1</div><br>
+                    <div class="step-label">🔍 Identifying Query</div>
+                    <div class="step-detail">RouterAgent ✔</div>
+                </div>
+                <div class="step-arrow">➜</div>
+                <div class="step-card done">
+                    <div class="step-num">2</div><br>
+                    <div class="step-label">📚 Searching DOA PDF Corpus</div>
+                    <div class="step-detail">RAG Vector Search ✔</div>
+                </div>
+                <div class="step-arrow">➜</div>
+                <div class="step-card done">
+                    <div class="step-num">3</div><br>
+                    <div class="step-label">🛡️ Safety Verification</div>
+                    <div class="step-detail">ReflectionAgent ✔</div>
+                </div>
+                <div class="step-arrow">➜</div>
+                <div class="step-card done">
+                    <div class="step-num">4</div><br>
+                    <div class="step-label">📄 Generating Advisory</div>
+                    <div class="step-detail">Synthesis ✔</div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+            # ── Tabbed Response Area ──
+            tab_labels = [
+                "📋 Farmer Advisory Report",
+                "📚 Official DOA Guidelines",
+                "🛡️ Safety & Regulatory Checks",
             ]
             if viva_mode:
-                tab_names.append("👨‍🏫 Live Agent JSON Trace (Viva Mode)")
+                tab_labels.append("👨‍🏫 Viva Agent JSON Trace")
 
-            tabs = st.tabs(tab_names)
-            
-            # TAB 1: Advisory Report
+            tabs = st.tabs(tab_labels)
+
+            # TAB 1 — Advisory Report
             with tabs[0]:
+                st.markdown("### 📋 Farmer Advisory & Recommended Action Plan")
                 st.markdown(response.final_synthesis)
                 st.download_button(
-                    label="📥 ගොවි උපදෙස් පත්‍රිකාව ඩවුන්ලෝඩ් කරන්න (Download Advisory Text)",
+                    label="📥 Download Advisory Report (.txt)",
                     data=response.final_synthesis,
                     file_name="paddy_advisory_report.txt",
                     mime="text/plain"
                 )
-            
-            # TAB 2: Official DOA Guidelines & Citations
+
+            # TAB 2 — DOA Guidelines & RAG Citations
             with tabs[1]:
-                st.markdown("### 📚 කෘෂිකර්ම දෙපාර්තමේන්තුවේ තහවුරු කළ මූලාශ්‍ර")
-                
+                st.markdown("### 📚 Official DOA Handbook Citations")
                 all_sources = []
                 if response.diagnostic_info:
                     all_sources.extend(response.diagnostic_info.rag_sources)
                 if response.fertilizer_info:
                     all_sources.extend(response.fertilizer_info.rag_sources)
-                
+
                 if all_sources:
                     for i, src in enumerate(all_sources, 1):
-                        with st.expander(f"📄 රාජ්‍ය නිල ප්‍රකාශනය #{i}: {src.filename} (පිටුව {src.page})"):
-                            st.write(f"**අංශය:** `{src.category}` | **ලේඛනය:** `{src.filename}` | **පිටුව:** {src.page}")
-                            st.markdown(f"> *\"{src.content}\"*")
+                        with st.expander(
+                            f"📄 Source #{i} — {src.filename} · Page {src.page}"
+                        ):
+                            st.write(
+                                f"**Category:** `{src.category}` · "
+                                f"**Document:** `{src.filename}` · "
+                                f"**Page:** {src.page}"
+                            )
+                            st.markdown(f'> *"{src.content}"*')
                 else:
-                    st.write("මෙම ප්‍රශ්නය සඳහා සෘජු PDF ඡේද හමු නොවූ අතර සාමාන්‍ය උපදෙස් අනුගමනය කෙරිණි.")
+                    st.info(
+                        "No direct handbook citations found for this query. "
+                        "The advisory was compiled from general DOA guidelines."
+                    )
 
-            # TAB 3: Safety & Regulations
+            # TAB 3 — Safety & Regulatory Checks
             with tabs[2]:
-                st.markdown("### 🛡️ කෘෂිකාර්මික සුරක්ෂිතතා සහ නීතිමය ප්‍රමිතීන්")
+                st.markdown("### 🛡️ Pesticide Act & Fertilizer Ordinance Compliance")
                 refl = response.reflection_result
                 if refl:
                     if refl.all_checks_passed:
-                        st.markdown('<span class="badge-pass">✅ සියලුම කෘෂිකාර්මික සුරක්ෂිතතා සහ ප්‍රමිතීන් අනුමතයි</span>', unsafe_allow_html=True)
+                        st.markdown(
+                            '<div class="badge-pass">'
+                            '✅ ALL CHECKS PASSED — Recommendations comply with '
+                            'Pesticide Act No.33 and Fertilizer Ordinance limits'
+                            '</div>',
+                            unsafe_allow_html=True
+                        )
                     else:
-                        st.markdown('<span class="badge-warn">⚠️ ඇතැම් රාජ්‍ය උපදෙස් සහ අවවාද හඳුනාගෙන ඇත</span>', unsafe_allow_html=True)
-                    
-                    st.markdown("#### සුරක්ෂිතතා පරීක්ෂණ වාර්තාව:")
+                        st.markdown(
+                            '<div class="badge-warn">'
+                            '⚠️ ATTENTION — Some chemicals may be restricted or '
+                            'require additional precautions under current regulations'
+                            '</div>',
+                            unsafe_allow_html=True
+                        )
+
+                    st.markdown("#### Safety Verdict Details:")
                     for v in refl.verdicts:
                         icon = "✅" if v.passed else "⚠️"
-                        st.write(f"{icon} **{v.check_name}**: {v.message}")
-                    
-                    st.markdown("#### අදාළ පනත් සහ දෙපාර්තමේන්තු නීති රීති:")
-                    for cite in refl.regulatory_citations:
-                        st.write(f"- 📜 {cite}")
-                else:
-                    st.write("සාමාන්‍ය තොරතුරු සඳහා වෙනම සුරක්ෂිතතා පරීක්ෂාවක් අවශ්‍ය නොවේ.")
+                        st.write(f"{icon} **{v.check_name}** — {v.message}")
 
-            # TAB 4 (OPTIONAL VIVA DEV MODE)
+                    if refl.regulatory_citations:
+                        st.markdown("#### Regulatory References:")
+                        for cite in refl.regulatory_citations:
+                            st.write(f"📜 {cite}")
+                else:
+                    st.info(
+                        "This is a general query — no chemical safety or "
+                        "regulatory checks were required."
+                    )
+
+            # TAB 4 — Viva / Dev JSON Trace (only when toggled)
             if viva_mode:
                 with tabs[3]:
-                    st.markdown("### 👨‍🏫 Viva Evaluator - Real-time Agent Communication Flow")
-                    st.info(f"Classified Intent: **{response.intent.value}** | Total Agent Messages Exchanged: **{len(response.message_trace)}**")
-                    
+                    st.markdown("### 👨‍🏫 Viva Evaluator — Raw A2A Message Trace")
+                    st.info(
+                        f"**Intent:** {response.intent.value} · "
+                        f"**Messages Exchanged:** {len(response.message_trace)}"
+                    )
                     for idx, msg in enumerate(response.message_trace, 1):
-                        with st.expander(f"✉️ Message #{idx}: {msg.sender} ➔ {msg.receiver} [{msg.intent.value}]", expanded=True):
+                        with st.expander(
+                            f"✉️ #{idx}: {msg.sender} ➔ {msg.receiver} "
+                            f"[{msg.intent.value}]",
+                            expanded=True
+                        ):
                             st.json({
                                 "message_id": msg.message_id,
                                 "sender": msg.sender,
                                 "receiver": msg.receiver,
                                 "intent": msg.intent.value,
                                 "timestamp": msg.timestamp,
-                                "payload": msg.payload
+                                "payload": msg.payload,
                             })
 
         except Exception as e:
-            st.error(f"ක්‍රියාත්මක වීමේ දෝෂයකි: {e}")
-            st.info("ඔබේ `.env` ගොනුවේ `GROQ_API_KEY` නිවැරදිව පවතීදැයි පරීක්ෂා කරන්න.")
+            st.error(f"Runtime Error: {e}")
+            st.info(
+                "Check that your `.env` file contains a valid API key and "
+                "the agent orchestrator modules are importable."
+            )
 
 
-# Footer
+# ══════════════════════════════════════════════
+# SECTION 4 — PRACTICAL FARMER TOOLS (Bottom)
+# ══════════════════════════════════════════════
+
 st.divider()
-st.caption("Horizon Campus — Module IT41043: Agentic AI Assignment | Built for Sri Lankan Farmers with LangChain, FAISS, Groq & Streamlit")
+st.markdown("## 🧰 Farmer Toolkit")
+
+tool_col1, tool_col2, tool_col3 = st.columns(3)
+
+# ── Column 1: Fertilizer Budget Calculator ──
+with tool_col1:
+    st.markdown("#### 💰 Fertilizer Budget Calculator (LKR)")
+    with st.expander("Estimate bags & cost for your field", expanded=True):
+        acres = st.number_input(
+            "Field size (Acres):", min_value=0.5, max_value=50.0,
+            value=2.0, step=0.5, key="calc_acres"
+        )
+        calc_season = st.selectbox(
+            "Crop season:", ["Yala (Dry)", "Maha (Wet)"], key="calc_season"
+        )
+
+        if "Yala" in calc_season:
+            urea_bags = round((acres * 50) / 50, 1)
+            tsp_bags  = round((acres * 25) / 50, 1)
+            mop_bags  = round((acres * 25) / 50, 1)
+        else:
+            urea_bags = round((acres * 65) / 50, 1)
+            tsp_bags  = round((acres * 30) / 50, 1)
+            mop_bags  = round((acres * 30) / 50, 1)
+
+        cost_lkr = (urea_bags + tsp_bags + mop_bags) * 2500
+
+        st.write(f"• **Urea (50 kg bags):** {urea_bags}")
+        st.write(f"• **TSP (50 kg bags):** {tsp_bags}")
+        st.write(f"• **MOP (50 kg bags):** {mop_bags}")
+        st.success(f"**Estimated Cost (subsidized):** LKR {cost_lkr:,.2f}")
+
+# ── Column 2: Seasonal Advisory Card ──
+with tool_col2:
+    st.markdown("#### 🗓️ Seasonal Advisory")
+    st.markdown("""
+    <div class="glass-card">
+        <div class="glass-card-title">🌾 Yala Season (May – August)</div>
+        <ul>
+            <li>Harvest standing crops promptly to avoid rain damage.</li>
+            <li>Practice dry tillage to break hardpan and control weeds.</li>
+            <li>Apply basal fertilizer at land preparation.</li>
+        </ul>
+    </div>
+    <div class="glass-card">
+        <div class="glass-card-title">🌧️ Maha Season (September – March)</div>
+        <ul>
+            <li>Incorporate organic matter during wet ploughing.</li>
+            <li>Select DOA-certified high-yield seed varieties.</li>
+            <li>Monitor water levels — avoid prolonged flooding.</li>
+        </ul>
+    </div>
+    """, unsafe_allow_html=True)
+
+# ── Column 3: Visual Disease Photo Gallery ──
+with tool_col3:
+    st.markdown("#### 🖼️ Common Paddy Disease Guide")
+    with st.expander("Identify common diseases by visual symptoms", expanded=True):
+        st.markdown("""
+        <div class="disease-item">
+            <div class="disease-name">🍂 Paddy Blast (Pyricularia oryzae)</div>
+            <div class="disease-desc">
+                Diamond-shaped grey-brown spots on leaves with dark borders.
+                Severe attacks collapse the leaf mid-rib. Treat with Tricyclazole spray.
+            </div>
+        </div>
+        <div class="disease-item">
+            <div class="disease-name">🟤 Brown Spot (Bipolaris oryzae)</div>
+            <div class="disease-desc">
+                Small oval brown lesions scattered across older leaves.
+                Linked to poor soil nutrition. Apply potassium and zinc supplements.
+            </div>
+        </div>
+        <div class="disease-item">
+            <div class="disease-name">🌿 Sheath Blight (Rhizoctonia solani)</div>
+            <div class="disease-desc">
+                Irregular grey-green water-soaked patches on the sheath near waterline.
+                Reduce nitrogen and apply Hexaconazole fungicide.
+            </div>
+        </div>
+        <div class="disease-item">
+            <div class="disease-name">🐛 Brown Planthopper — BPH</div>
+            <div class="disease-desc">
+                Plants turn yellow-brown and dry out in circular patches ("hopper burn").
+                Drain fields for 3–4 days and use neem-based sprays before chemical control.
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+
+# ──────────────────────────────────────────────
+# Footer
+# ──────────────────────────────────────────────
+st.divider()
+st.caption(
+    "Horizon Campus — Module IT41043: Agentic AI Assignment · "
+    "Built with LangChain, FAISS, Groq & Streamlit"
+)
