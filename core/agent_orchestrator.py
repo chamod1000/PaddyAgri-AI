@@ -4,6 +4,12 @@ Coordinates agent-to-agent communication, manages workflow execution,
 and synthesizes multi-agent responses for Sri Lankan paddy farmers.
 """
 
+import sys
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8")
+
 import uuid
 from datetime import datetime
 from typing import List, Optional

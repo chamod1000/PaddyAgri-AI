@@ -3,6 +3,12 @@ BaseAgent Abstract Parent Class
 Provides common LLM invocation, error handling, resilient fallback, and message logging infrastructure.
 """
 
+import sys
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8")
+
 import time
 from abc import ABC, abstractmethod
 from typing import Any
