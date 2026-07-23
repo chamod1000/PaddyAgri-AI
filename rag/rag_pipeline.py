@@ -93,16 +93,25 @@ def chunk_documents(
     return chunks
 
 
+_CACHED_EMBEDDINGS = None
+_CACHED_VECTOR_STORE = None
+
+
 def get_embeddings_model() -> HuggingFaceEmbeddings:
     """
-    Initializes multilingual HuggingFace embedding model.
+    Initializes multilingual HuggingFace embedding model with singleton caching.
     """
+    global _CACHED_EMBEDDINGS
+    if _CACHED_EMBEDDINGS is not None:
+        return _CACHED_EMBEDDINGS
+
     print(f"[INFO] Loading multilingual embedding model: {EMBEDDING_MODEL_NAME}...")
-    return HuggingFaceEmbeddings(
+    _CACHED_EMBEDDINGS = HuggingFaceEmbeddings(
         model_name=EMBEDDING_MODEL_NAME,
         model_kwargs={'device': 'cpu'},
         encode_kwargs={'normalize_embeddings': True}
     )
+    return _CACHED_EMBEDDINGS
 
 
 def create_or_load_vector_store(
@@ -110,17 +119,22 @@ def create_or_load_vector_store(
     force_rebuild: bool = False
 ) -> FAISS:
     """
-    Creates a new FAISS vector database from chunks or loads an existing local index.
+    Creates a new FAISS vector database from chunks or loads an existing local index with singleton caching.
     """
+    global _CACHED_VECTOR_STORE
+    if not force_rebuild and _CACHED_VECTOR_STORE is not None:
+        return _CACHED_VECTOR_STORE
+
     embeddings = get_embeddings_model()
 
     if not force_rebuild and FAISS_INDEX_DIR.exists():
         print(f"[INFO] Loading existing FAISS index from {FAISS_INDEX_DIR}...")
-        return FAISS.load_local(
+        _CACHED_VECTOR_STORE = FAISS.load_local(
             str(FAISS_INDEX_DIR),
             embeddings,
             allow_dangerous_deserialization=True
         )
+        return _CACHED_VECTOR_STORE
 
     if not chunks:
         print("[INFO] FAISS index missing on disk. Auto-loading PDF documents to build vector store...")

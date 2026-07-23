@@ -38,7 +38,7 @@ def detect_language_and_script(query_text: str) -> bool:
     return False
 
 
-def get_gemini_model(model_name: str = "gemini-2.0-flash", temperature: float = 0.2) -> Optional[BaseChatModel]:
+def get_gemini_model(model_name: str = "gemini-2.0-flash", temperature: float = 0.1) -> Optional[BaseChatModel]:
     """
     Instantiates Google Gemini LLM via langchain-google-genai.
     Tries gemini-2.0-flash or gemini-1.5-pro.
@@ -80,7 +80,7 @@ def get_router_model() -> BaseChatModel:
         return ChatGroq(
             model_name="llama-3.1-8b-instant",
             groq_api_key=groq_api_key,
-            temperature=0.0
+            temperature=0.0  # Zero for routing strictly
         )
     elif gemini_api_key:
         gemini_llm = get_gemini_model(model_name="gemini-2.0-flash", temperature=0.0)
@@ -118,10 +118,13 @@ def get_reasoning_model(model_override: Optional[str] = None, is_sinhala_or_sing
     gemini_api_key = os.getenv("GEMINI_API_KEY")
     openrouter_api_key = os.getenv("OPENROUTER_API_KEY")
 
+    # Ultra-Fast Generation: Temperature 0.1 for precise tokens
+    T = 0.1
+
     if is_sinhala_or_singlish and gemini_api_key:
         # Prio 1 for Sinhala/Singlish: Gemini
         target_model = model_override or "gemini-2.0-flash"
-        gemini_llm = get_gemini_model(model_name=target_model, temperature=0.2)
+        gemini_llm = get_gemini_model(model_name=target_model, temperature=T)
         if gemini_llm:
             print("[MODEL PROVIDER] Detected Sinhala/Singlish! Routing to Google Gemini API.")
             return gemini_llm
@@ -133,13 +136,13 @@ def get_reasoning_model(model_override: Optional[str] = None, is_sinhala_or_sing
         return ChatGroq(
             model_name=target_model,
             groq_api_key=groq_api_key,
-            temperature=0.2
+            temperature=T
         )
 
     # Priority 2 for English: Google Gemini API
     if gemini_api_key:
         target_model = model_override or "gemini-2.0-flash"
-        gemini_llm = get_gemini_model(model_name=target_model, temperature=0.2)
+        gemini_llm = get_gemini_model(model_name=target_model, temperature=T)
         if gemini_llm:
             return gemini_llm
 
@@ -151,7 +154,7 @@ def get_reasoning_model(model_override: Optional[str] = None, is_sinhala_or_sing
             model_name=target_model,
             openai_api_key=openrouter_api_key,
             openai_api_base="https://openrouter.ai/api/v1",
-            temperature=0.2
+            temperature=T
         )
 
     raise ValueError(
