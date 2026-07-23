@@ -30,7 +30,7 @@ class RouterAgent(BaseAgent):
             "- DISEASE_DIAGNOSIS : If query is about plant leaf yellowing, spots, pests, blights, or symptoms.\n"
             "- FERTILIZER_RECOMMENDATION : If query is about NPK fertilizer, urea dosage, soil nutrients, or Yala/Maha seasons.\n"
             "- BOTH : If query asks about both plant disease/pests AND fertilizer/soil treatment.\n"
-            "- GENERAL : If query is a general greeting or unrelated agricultural question.\n\n"
+            "- GENERAL : If query is about seed paddy standards, germination percentages, seed purity, quarantine acts, soil conservation, or general farming guidelines.\n\n"
             "Respond ONLY with the category name string (DISEASE_DIAGNOSIS, FERTILIZER_RECOMMENDATION, BOTH, or GENERAL)."
         )
 
