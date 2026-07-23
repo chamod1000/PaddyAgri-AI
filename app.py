@@ -26,32 +26,21 @@ st.markdown("""
 <style>
     /* Global Container Styling */
     .main-header {
-        font-size: 2.3rem;
+        font-size: 2.2rem;
         font-weight: 800;
         color: #0b3c26;
         background: linear-gradient(135deg, #d8f3dc 0%, #b7e4c7 50%, #95d5b2 100%);
-        padding: 1.5rem 2rem;
+        padding: 1.2rem 1.8rem;
         border-radius: 16px;
         border-left: 8px solid #2d6a4f;
         box-shadow: 0 4px 15px rgba(0,0,0,0.05);
         margin-bottom: 1.5rem;
     }
     .sub-header {
-        font-size: 1.1rem;
+        font-size: 1.05rem;
         color: #1b4332;
         font-weight: 600;
         margin-top: 0.2rem;
-    }
-    
-    /* Modern Glassmorphism Cards */
-    .glass-card {
-        background: rgba(255, 255, 255, 0.85);
-        backdrop-filter: blur(10px);
-        border: 1px solid #d8f3dc;
-        border-radius: 12px;
-        padding: 1.2rem;
-        margin-bottom: 1rem;
-        box-shadow: 0 4px 12px rgba(45, 106, 79, 0.08);
     }
     
     /* Feature Highlight Cards */
@@ -65,7 +54,7 @@ st.markdown("""
     .feature-title {
         font-weight: 700;
         color: #2d6a4f;
-        font-size: 1.1rem;
+        font-size: 1.05rem;
     }
     
     /* Safety Badge Styling */
@@ -147,7 +136,6 @@ with col_widget1:
         acres = st.number_input("Field Size (Acres):", min_value=0.5, max_value=50.0, value=2.0, step=0.5)
         calc_season = st.selectbox("Season:", ["Yala Season (යල)", "Maha Season (මහ)"])
         
-        # Calculations based on DoA recommendations
         if "Yala" in calc_season:
             urea_bags = round((acres * 50) / 50, 1)
             tsp_bags = round((acres * 25) / 50, 1)
@@ -157,7 +145,6 @@ with col_widget1:
             tsp_bags = round((acres * 30) / 50, 1)
             mop_bags = round((acres * 30) / 50, 1)
 
-        # Standard subsidized price per 50kg bag approx Rs. 2,500
         cost_lkr = (urea_bags + tsp_bags + mop_bags) * 2500
         
         st.write(f"• **Urea (50kg bags):** {urea_bags} bags")
@@ -184,44 +171,54 @@ with col_widget3:
 
 st.divider()
 
+# Session State for Active Query
+if "active_query" not in st.session_state:
+    st.session_state["active_query"] = ""
+
 # Sample Quick Queries
-st.markdown("##### 💡 Sample Quick Queries (Click to load):")
+st.markdown("##### 💡 Sample Quick Queries (Click to run):")
 col_q1, col_q2, col_q3, col_q4 = st.columns(4)
 
-sample_query = ""
 if col_q1.button("🍂 Paddy Blast Symptoms"):
-    sample_query = "What are the common symptoms and control measures for Paddy Blast disease?"
+    st.session_state["active_query"] = "What are the common symptoms and control measures for Paddy Blast disease?"
 
 if col_q2.button("🌱 Yala Season Fertilizer"):
-    sample_query = "What is the recommended NPK fertilizer mixture for Yala season paddy in Polonnaruwa?"
+    st.session_state["active_query"] = "What is the recommended NPK fertilizer mixture for Yala season paddy in Polonnaruwa?"
 
 if col_q3.button("🇱🇰 Sinhala Query (දුඹුරු ලප)"):
-    sample_query = "ගොයම් පත්‍ර වල දුඹුරු පැහැ ලප ඇති වී ඇත, යල කන්නයට පොහොර යොදන්නේ කෙසේද?"
+    st.session_state["active_query"] = "ගොයම් පත්‍ර වල දුඹුරු පැහැ ලප ඇති වී ඇත, යල කන්නයට පොහොර යොදන්නේ කෙසේද?"
 
 if col_q4.button("📜 Seed Paddy Standards"):
-    sample_query = "What are the germination requirements for certified seed paddy in Sri Lanka?"
+    st.session_state["active_query"] = "What are the germination requirements for certified seed paddy in Sri Lanka?"
 
 
-# Main Query Form
-with st.form("query_form", clear_on_submit=False):
-    user_input = st.text_area(
-        "Enter your agricultural query (in English or Sinhala / ඉංග්‍රීසි හෝ සිංහලෙන් අසන්න):",
-        value=sample_query if sample_query else "",
-        placeholder="e.g. My paddy field leaves are turning yellow with brown spots. What fertilizer and treatment should I use?",
-        height=110
-    )
-    submit_button = st.form_submit_button("🚀 Run Multi-Agent Diagnostic Analysis", type="primary", use_container_width=True)
+# Input Text Box
+user_input = st.text_area(
+    "Enter your agricultural query (in English or Sinhala / ඉංග්‍රීසි හෝ සිංහලෙන් අසන්න):",
+    value=st.session_state["active_query"],
+    placeholder="e.g. My paddy field leaves are turning yellow with brown spots. What fertilizer and treatment should I use?",
+    height=100
+)
 
+col_btn1, col_btn2 = st.columns([3, 1])
+submit_button = col_btn1.button("🚀 Run Multi-Agent Diagnostic Analysis", type="primary", use_container_width=True)
+clear_button = col_btn2.button("🗑️ Clear", use_container_width=True)
+
+if clear_button:
+    st.session_state["active_query"] = ""
+    st.rerun()
 
 # Execution & Response Render
-if submit_button and user_input.strip():
+query_to_run = user_input.strip() if user_input.strip() else st.session_state["active_query"]
+
+if (submit_button or st.session_state["active_query"]) and query_to_run:
     with st.spinner("🔄 Multi-Agent System orchestrating diagnosis, RAG search & reflection verification..."):
         try:
             from agent_orchestrator import PaddyAgentOrchestrator
             orchestrator = PaddyAgentOrchestrator()
-            response = orchestrator.process_user_request(user_input.strip())
+            response = orchestrator.process_user_request(query_to_run)
             
-            st.success("✅ Multi-Agent Analysis Completed Successfully!")
+            st.success(f"✅ Multi-Agent Analysis Completed for: \"{query_to_run}\"")
             
             tab_report, tab_agents, tab_rag, tab_safety = st.tabs([
                 "📋 Farmer Advisory Report", 
