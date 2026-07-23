@@ -5,11 +5,37 @@ Connects Google Gemini API, Groq Cloud, and OpenRouter for high-reasoning, low-l
 """
 
 import os
+import re
 from typing import Optional, Dict
 from dotenv import load_dotenv
 from langchain_core.language_models import BaseChatModel
 
 load_dotenv()
+
+
+def detect_language_and_script(query_text: str) -> bool:
+    """
+    Intelligent Auto-Detection for Sinhala & Singlish context.
+    Returns True if Sinhala unicode characters or Singlish phonetic patterns are detected.
+    """
+    text_lower = query_text.lower()
+
+    # A) Check for Sinhala Unicode characters range (඀ to ෿)
+    if re.search(r'[඀-෿]', query_text):
+        return True
+
+    # B) Check for Singlish phonetic patterns / agricultural keywords
+    singlish_keywords = [
+        'goyam', 'pohora', 'kannaya', 'pala', 'peththara',
+        'wagawe', 'lapa', 'kaha', 'rogo', 'beheth', 'gedi', 'kola'
+    ]
+
+    # Use word boundary regex to avoid partial matches inside English words
+    for kw in singlish_keywords:
+        if re.search(rf'\b{kw}\b', text_lower):
+            return True
+
+    return False
 
 
 def get_gemini_model(model_name: str = "gemini-2.0-flash", temperature: float = 0.2) -> Optional[BaseChatModel]:
@@ -69,25 +95,38 @@ def get_router_model() -> BaseChatModel:
             openai_api_base="https://openrouter.ai/api/v1",
             temperature=0.0
         )
-    
+
     raise ValueError(
         "API Key missing! Please set GEMINI_API_KEY, GROQ_API_KEY, or OPENROUTER_API_KEY in your .env file."
     )
 
 
-def get_reasoning_model(model_override: Optional[str] = None) -> BaseChatModel:
+def get_reasoning_model(model_override: Optional[str] = None, is_sinhala_or_singlish: bool = False) -> BaseChatModel:
     """
     Returns a high reasoning quality model for Paddy Disease Diagnosis & Fertilizer Synthesis.
-    Priority Order:
+    Priority Order when Sinhala/Singlish is DETECTED:
+      1. Google Gemini API (gemini-2.0-flash / gemini-1.5-pro) - Best multilingual comprehension
+      2. Groq Llama 3.3 70B Versatile
+      3. OpenRouter
+
+    Priority Order for Standard English:
       1. Groq Llama 3.3 70B Versatile (SOTA Fast 70B Model)
-      2. Google Gemini API (gemini-2.0-flash / gemini-1.5-pro)
-      3. OpenRouter (Claude 3.5 / Llama 70B)
+      2. Google Gemini API
+      3. OpenRouter
     """
     groq_api_key = os.getenv("GROQ_API_KEY")
     gemini_api_key = os.getenv("GEMINI_API_KEY")
     openrouter_api_key = os.getenv("OPENROUTER_API_KEY")
 
-    # Priority 1: Groq Llama 3.3 70B (Fast, Highly Accurate)
+    if is_sinhala_or_singlish and gemini_api_key:
+        # Prio 1 for Sinhala/Singlish: Gemini
+        target_model = model_override or "gemini-2.0-flash"
+        gemini_llm = get_gemini_model(model_name=target_model, temperature=0.2)
+        if gemini_llm:
+            print("[MODEL PROVIDER] Detected Sinhala/Singlish! Routing to Google Gemini API.")
+            return gemini_llm
+
+    # Priority 1 for English or Fallback for Sinhala: Groq Llama 3.3 70B
     if groq_api_key:
         from langchain_groq import ChatGroq
         target_model = model_override or "llama-3.3-70b-versatile"
@@ -97,7 +136,7 @@ def get_reasoning_model(model_override: Optional[str] = None) -> BaseChatModel:
             temperature=0.2
         )
 
-    # Priority 2: Google Gemini API
+    # Priority 2 for English: Google Gemini API
     if gemini_api_key:
         target_model = model_override or "gemini-2.0-flash"
         gemini_llm = get_gemini_model(model_name=target_model, temperature=0.2)
