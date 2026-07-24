@@ -126,20 +126,77 @@ class PaddyAgentOrchestrator:
             print(f"[AGENT MESSAGE] {msg_to_gen.sender} -> {msg_to_gen.receiver} | Intent: GENERAL")
             general_rag_synthesis = await asyncio.to_thread(self._process_general_query, user_query)
 
-        # Step 3: Reflection & Safety Verification (Reflection/Self-Critique Pattern)
+        # Step 3: Reflection & Self-Correction Loop (Reflection/Self-Critique Pattern)
+        # MAX 1 correction round to prevent infinite loops
+        MAX_CORRECTION_ROUNDS = 1
         reflection_result: Optional[ReflectionResult] = None
+
         if diagnostic_info or fertilizer_info or general_rag_synthesis:
-            msg_to_refl = AgentMessage(
-                message_id=f"{session_id}_refl",
-                sender="Orchestrator",
-                receiver="ReflectionAgent",
-                intent=intent,
-                user_query=user_query,
-                payload={"task": "safety_and_regulatory_verification"}
-            )
-            message_trace.append(msg_to_refl)
-            print(f"[AGENT MESSAGE] {msg_to_refl.sender} -> {msg_to_refl.receiver} | Intent: {intent.value}")
-            reflection_result = await asyncio.to_thread(self.reflection_agent.process, diagnostic_info, fertilizer_info)
+            for correction_round in range(MAX_CORRECTION_ROUNDS + 1):
+                round_label = "Initial Check" if correction_round == 0 else f"Self-Correction Round {correction_round}"
+                msg_to_refl = AgentMessage(
+                    message_id=f"{session_id}_refl_r{correction_round}",
+                    sender="Orchestrator",
+                    receiver="ReflectionAgent",
+                    intent=intent,
+                    user_query=user_query,
+                    payload={"task": "safety_and_regulatory_verification", "round": round_label}
+                )
+                message_trace.append(msg_to_refl)
+                print(f"[AGENT MESSAGE] {msg_to_refl.sender} -> {msg_to_refl.receiver} | {round_label}")
+                reflection_result = await asyncio.to_thread(
+                    self.reflection_agent.process, diagnostic_info, fertilizer_info
+                )
+
+                # If all checks passed OR no critique to act on, stop the loop
+                if reflection_result.all_checks_passed or not reflection_result.critique_payload:
+                    print(f"[ORCHESTRATOR] Reflection passed on {round_label}.")
+                    break
+
+                # Safety violations detected — trigger self-correction if not on last round
+                if correction_round < MAX_CORRECTION_ROUNDS:
+                    critique = reflection_result.critique_payload
+                    print(f"[ORCHESTRATOR] Violations found. Triggering Self-Correction round {correction_round + 1}...")
+
+                    async def rerun_diag_with_feedback():
+                        nonlocal diagnostic_info
+                        msg_fix = AgentMessage(
+                            message_id=f"{session_id}_diag_fix_r{correction_round + 1}",
+                            sender="ReflectionAgent",
+                            receiver="DiagnosticAgent",
+                            intent=intent,
+                            user_query=user_query,
+                            payload={"task": "self_correction_resynth", "round": correction_round + 1}
+                        )
+                        message_trace.append(msg_fix)
+                        print(f"[AGENT MESSAGE] ReflectionAgent -> DiagnosticAgent | Self-Correction")
+                        diagnostic_info = await asyncio.to_thread(
+                            self.diagnostic_agent.process, msg_fix, critique
+                        )
+
+                    async def rerun_fert_with_feedback():
+                        nonlocal fertilizer_info
+                        msg_fix = AgentMessage(
+                            message_id=f"{session_id}_fert_fix_r{correction_round + 1}",
+                            sender="ReflectionAgent",
+                            receiver="FertilizerAgent",
+                            intent=intent,
+                            user_query=user_query,
+                            payload={"task": "self_correction_resynth", "round": correction_round + 1}
+                        )
+                        message_trace.append(msg_fix)
+                        print(f"[AGENT MESSAGE] ReflectionAgent -> FertilizerAgent | Self-Correction")
+                        fertilizer_info = await asyncio.to_thread(
+                            self.fertilizer_agent.process, msg_fix, critique
+                        )
+
+                    fix_tasks = []
+                    if diagnostic_info:
+                        fix_tasks.append(rerun_diag_with_feedback())
+                    if fertilizer_info:
+                        fix_tasks.append(rerun_fert_with_feedback())
+                    if fix_tasks:
+                        await asyncio.gather(*fix_tasks)
 
         # Step 4: Synthesis of Final Output
         final_synthesis = self._build_synthesis(
@@ -188,6 +245,9 @@ class PaddyAgentOrchestrator:
             res = llm.invoke(messages)
             return res.content
         except Exception as primary_err:
+            if "429" in str(primary_err) or "RESOURCE_EXHAUSTED" in str(primary_err):
+                from config.model_provider import set_gemini_quota_exhausted
+                set_gemini_quota_exhausted()
             print(f"[ORCHESTRATOR WARNING] Primary Gemini model failed ({primary_err}). Retrying with Groq 70B fallback...")
             try:
                 fallback_llm = get_reasoning_model(is_sinhala_or_singlish=False)

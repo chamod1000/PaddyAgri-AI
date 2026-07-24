@@ -4,7 +4,7 @@ Agentic Pattern 2: Tool-Use & ReAct Pattern using RAG + Groq Llama 3.3 70B / Goo
 """
 
 import json
-from typing import List
+from typing import List, Optional
 
 from core.agent_messages import AgentMessage, DiagnosticResult, RAGContextChunk
 from core.agents.base_agent import BaseAgent
@@ -16,13 +16,14 @@ class DiagnosticAgent(BaseAgent):
     """
     Specialized agent for paddy disease diagnosis using deep reasoning model + RAG search tool.
     Dynamically routes to Gemini if Sinhala or Singlish language is detected.
+    Supports Explicit Chain-of-Thought (CoT) and Self-Correction Loop.
     """
 
     def __init__(self):
         # Default initialization with standard reasoning model
         super().__init__(name="DiagnosticAgent", model=get_reasoning_model())
 
-    def process(self, message: AgentMessage) -> DiagnosticResult:
+    def process(self, message: AgentMessage, feedback: Optional[str] = None) -> DiagnosticResult:
         self._log_start(message)
         query = message.user_query
 
@@ -30,8 +31,8 @@ class DiagnosticAgent(BaseAgent):
         is_sinhala_or_singlish = detect_language_and_script(query)
         self.model = get_reasoning_model(is_sinhala_or_singlish=is_sinhala_or_singlish)
 
-        # Step 1: Tool-Use Pattern - Retrieve RAG context chunks
-        rag_results = rag_search_tool.invoke({"query": query, "top_k": 4})
+        # Step 1: Tool-Use Pattern - Retrieve RAG context chunks (Expanded top_k=6)
+        rag_results = rag_search_tool.invoke({"query": query, "top_k": 6})
 
         sources: List[RAGContextChunk] = []
         context_str = ""
@@ -45,21 +46,46 @@ class DiagnosticAgent(BaseAgent):
             ))
             context_str += f"\n--- Source: {chunk['filename']} (Page {chunk['page']}) ---\n{chunk['content']}\n"
 
-        # Step 2: Synthesis with Reasoning LLM
+        # Step 2: Synthesis with Reasoning LLM & Explicit CoT prompting
+        is_sinhala_or_singlish = detect_language_and_script(query)
+
+        if is_sinhala_or_singlish:
+            lang_instruction = (
+                "CRITICAL SINHALA LANGUAGE MANDATE:\n"
+                "The farmer asked their query in Sinhala or Singlish.\n"
+                "You MUST write ALL JSON text values ('suspected_disease', 'symptoms_identified', 'treatment_recommended', 'confidence_level') 100% IN FORMAL, NATURAL SINHALA (සිංහල).\n"
+                "Example: 'suspected_disease': 'ගොයම් කොළ පාළු රෝගය (Paddy Blast)', 'symptoms_identified': ['පත්‍රවල දුඹුරු පැහැ ලප ඇතිවීම', 'පත්‍ර අග්‍ර කහ පැහැ වී වේලී යාම'].\n"
+                "Do NOT output plain English strings for disease names or symptoms when query is in Sinhala/Singlish.\n\n"
+            )
+        else:
+            lang_instruction = (
+                "Respond in clear, professional Simple English.\n\n"
+            )
+
         system_prompt = (
             "You are a Senior Agricultural Pathologist specializing in Sri Lankan Paddy Rice Diseases.\n"
-            "Analyze the farmer's query and the provided domain knowledge context to produce a diagnosis.\n"
+            "Analyze the farmer's query and the provided domain knowledge context to produce a diagnosis.\n\n"
+            f"{lang_instruction}"
+            "You must perform step-by-step Chain-of-Thought reasoning under the 'thought_process' field, analyzing:\n"
+            "A) The crop stage and environmental context.\n"
+            "B) RAG Handbook document matching references.\n"
+            "C) Department of Agriculture safety limits and regulatory compliance.\n\n"
             "You must return a valid JSON object with the following fields:\n"
             "{\n"
+            '  "thought_process": "Step-by-step reasoning analysis",\n'
             '  "suspected_disease": "Name of disease/pest",\n'
             '  "symptoms_identified": ["symptom 1", "symptom 2"],\n'
             '  "treatment_recommended": ["control measure 1", "fungicide/insecticide 2"],\n'
             '  "confidence_level": "High / Medium / Low"\n'
             "}\n"
-            "If Sinhala language text is provided, include Sinhala or Singlish translations alongside English terms."
         )
 
         user_content = f"Farmer Query: {query}\n\nRetrieved Knowledge Base Context:\n{context_str}"
+        if feedback:
+            user_content += (
+                f"\n\n⚠️ REFLECTION CRITIQUE & SELF-CORRECTION FEEDBACK:\n{feedback}\n"
+                f"Please review this critique, self-correct your previous analysis, and provide a rectified response."
+            )
 
         try:
             response = self.invoke_llm([
@@ -76,6 +102,7 @@ class DiagnosticAgent(BaseAgent):
 
             parsed = json.loads(raw_text)
             result = DiagnosticResult(
+                thought_process=parsed.get("thought_process", "CoT Completed"),
                 suspected_disease=parsed.get("suspected_disease", "Paddy Health Anomaly"),
                 symptoms_identified=parsed.get("symptoms_identified", []),
                 treatment_recommended=parsed.get("treatment_recommended", []),
@@ -87,6 +114,7 @@ class DiagnosticAgent(BaseAgent):
         except Exception as e:
             self._log_error(e, "Fallback diagnosis synthesis")
             return DiagnosticResult(
+                thought_process="Failed parsing response, fallback used.",
                 suspected_disease="Paddy Blast / Sheath Blight Suspect",
                 symptoms_identified=["Foliar lesions", "Yellowing of leaf tips"],
                 treatment_recommended=[

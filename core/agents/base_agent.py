@@ -44,6 +44,9 @@ class BaseAgent(ABC):
             print(f"[{self.name}] LLM response received in {duration:.2f}s")
             return response
         except Exception as e:
+            if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
+                from config.model_provider import set_gemini_quota_exhausted
+                set_gemini_quota_exhausted()
             self._log_error(e, "Primary LLM invocation failed")
             try:
                 from config.model_provider import get_reasoning_model
