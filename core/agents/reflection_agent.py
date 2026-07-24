@@ -1,6 +1,7 @@
 """
 ReflectionAgent Implementation
 Agentic Pattern 4: Reflection & Self-Critique Pattern for safety & regulatory verification.
+Supports returning structured critique payloads for self-correction loops.
 """
 
 import uuid
@@ -18,6 +19,7 @@ class ReflectionAgent(BaseAgent):
     Safety & Quality Verifier that double-checks pesticide/fertilizer recommendations
     against Sri Lankan Department of Agriculture (DoA) environmental safety guidelines
     and biosecurity regulations before final output synthesis.
+    If safety violations are found, generates a critique payload for self-correction loops.
     """
 
     def __init__(self):
@@ -119,8 +121,58 @@ class ReflectionAgent(BaseAgent):
             "FAO Sri Lanka - Code of Conduct for Pesticide Management (2023)",
         ]
 
-    def process(self, diagnostic: Optional[DiagnosticResult] = None, fertilizer: Optional[FertilizerRecommendation] = None) -> ReflectionResult:
-        """Run all safety checks on agent outputs."""
+    def build_critique_payload(
+        self,
+        warnings: List[str],
+        biosecurity_alerts: List[str],
+        failed_verdicts: List[SafetyVerdict]
+    ) -> Optional[str]:
+        """
+        Build a structured critique payload for the self-correction feedback loop.
+        Only generated when there are safety violations or missing parameters.
+        """
+        if not warnings and not biosecurity_alerts:
+            return None
+
+        lines = ["REFLECTION CRITIQUE PAYLOAD — Self-Correction Required:\n"]
+
+        if biosecurity_alerts:
+            lines.append("🔴 CRITICAL BIOSECURITY VIOLATIONS:")
+            for alert in biosecurity_alerts:
+                lines.append(f"  - {alert}")
+
+        if warnings:
+            lines.append("\n⚠️ SAFETY WARNINGS & LIMIT VIOLATIONS:")
+            for w in warnings:
+                lines.append(f"  - {w}")
+
+        lines.append("\n📋 REQUIRED CORRECTIONS:")
+        for v in failed_verdicts:
+            if not v.passed:
+                if v.severity == "critical":
+                    lines.append(
+                        f"  - REPLACE restricted '{v.check_name}' chemical with a DoA-approved alternative. "
+                        f"Do NOT recommend any chemical from the Sri Lanka banned pesticide list."
+                    )
+                elif v.severity == "warning":
+                    if "dosage" in v.check_name:
+                        lines.append(
+                            f"  - REDUCE {v.check_name.replace('_dosage', '')} dosage to comply with "
+                            f"DoA maximum limits (Urea ≤65 kg/ac, TSP ≤30 kg/ac, MOP ≤30 kg/ac)."
+                        )
+                    else:
+                        lines.append(
+                            f"  - INCLUDE safety precautions and PPE instructions regarding '{v.check_name}'."
+                        )
+
+        return "\n".join(lines)
+
+    def process(
+        self,
+        diagnostic: Optional[DiagnosticResult] = None,
+        fertilizer: Optional[FertilizerRecommendation] = None
+    ) -> ReflectionResult:
+        """Run all safety checks on agent outputs, build critique if issues found."""
         all_verdicts: List[SafetyVerdict] = []
         warnings: List[str] = []
         biosecurity_alerts: List[str] = []
@@ -135,13 +187,18 @@ class ReflectionAgent(BaseAgent):
             all_verdicts.extend(self.verify_allergens(diagnostic.treatment_recommended))
 
         # Aggregate warnings
+        failed_verdicts = []
         for v in all_verdicts:
             if not v.passed:
                 warnings.append(v.message)
+                failed_verdicts.append(v)
                 if v.severity == "critical":
                     biosecurity_alerts.append(f"BIOSECURITY: {v.message}")
 
         all_passed = all(v.passed for v in all_verdicts)
+
+        # Build critique payload for self-correction loop (only if violations detected)
+        critique_payload = self.build_critique_payload(warnings, biosecurity_alerts, failed_verdicts)
 
         return ReflectionResult(
             recommendation_id=f"ref_{uuid.uuid4().hex[:8]}",
@@ -149,5 +206,6 @@ class ReflectionAgent(BaseAgent):
             verdicts=all_verdicts,
             warnings=warnings,
             regulatory_citations=self.get_citations(),
-            biosecurity_alerts=biosecurity_alerts
+            biosecurity_alerts=biosecurity_alerts,
+            critique_payload=critique_payload
         )

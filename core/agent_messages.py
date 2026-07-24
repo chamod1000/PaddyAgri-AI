@@ -42,6 +42,7 @@ class RAGContextChunk(BaseModel):
 
 class DiagnosticResult(BaseModel):
     """Output produced by the Diagnostic Agent."""
+    thought_process: str = Field(default="Chain of thought reasoning...", description="Step-by-step reasoning")
     suspected_disease: str
     symptoms_identified: List[str]
     treatment_recommended: List[str]
@@ -51,6 +52,7 @@ class DiagnosticResult(BaseModel):
 
 class FertilizerRecommendation(BaseModel):
     """Output produced by the Fertilizer Agent."""
+    thought_process: str = Field(default="Chain of thought reasoning...", description="Step-by-step reasoning")
     season: str  # Yala or Maha
     district_zone: str
     urea_dosage_per_acre_kg: float
@@ -76,6 +78,7 @@ class ReflectionResult(BaseModel):
     warnings: List[str] = Field(default_factory=list, description="Aggregated warning messages")
     regulatory_citations: List[str] = Field(default_factory=list, description="Applicable Sri Lankan DoA regulatory citations")
     biosecurity_alerts: List[str] = Field(default_factory=list, description="Any biosecurity / invasive species concerns")
+    critique_payload: Optional[str] = Field(default=None, description="Structured critique text for self-correction re-synthesis loop")
 
 
 class AgentResponse(BaseModel):

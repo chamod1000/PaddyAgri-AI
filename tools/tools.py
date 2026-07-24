@@ -18,7 +18,7 @@ def get_cached_vector_store():
 
 
 @tool
-def rag_search_tool(query: str, top_k: int = 4) -> List[Dict[str, Any]]:
+def rag_search_tool(query: str, top_k: int = 6) -> List[Dict[str, Any]]:
     """
     Searches the paddy farming FAISS vector database for relevant domain knowledge chunks.
     Supports both English and Sinhala search queries.
