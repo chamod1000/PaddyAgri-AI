@@ -201,16 +201,7 @@ with st.sidebar:
 
     st.divider()
 
-    # 📞 Agrarian Helpline
-    st.markdown("### 📞 Agrarian Helpline")
-    st.info(
-        "**Department of Agriculture — 1920**\n\n"
-        "☎️ **1920** (Govi Sahana Piyasa)\n\n"
-        "🌐 [doa.gov.lk](http://www.doa.gov.lk)\n\n"
-        "*Free expert advice for Sri Lankan farmers.*"
-    )
 
-    st.divider()
 
     # 🗑️ Clear Chat History
     if st.button("🗑️ Clear Chat History", use_container_width=True):
