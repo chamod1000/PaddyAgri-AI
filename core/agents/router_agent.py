@@ -19,18 +19,14 @@ class RouterAgent(BaseAgent):
         super().__init__(name="RouterAgent", model=get_router_model())
 
     def route_query(self, user_query: str) -> QueryIntent:
-        # A) Perform Sinhala/Singlish Detection
-        is_sinhala_or_singlish = detect_language_and_script(user_query)
-        if is_sinhala_or_singlish:
-            print(f"[{self.name}] Sinhala or Singlish script detected! Activating Google Gemini route.")
-
+        """Dynamically classifies farmer query intent using AI LLM reasoning."""
         system_prompt = (
-            "You are an intent classification agent for a Sri Lankan Paddy Farming Support System.\n"
-            "Classify the user's query into EXACTLY ONE of the following categories:\n"
-            "- DISEASE_DIAGNOSIS : If query is about plant leaf yellowing, spots, pests, blights, or symptoms.\n"
-            "- FERTILIZER_RECOMMENDATION : If query is about NPK fertilizer, urea dosage, soil nutrients, or Yala/Maha seasons.\n"
+            "You are an intelligent agricultural intent routing agent for a Sri Lankan Paddy Farming System.\n"
+            "Analyze the farmer's query and classify it into EXACTLY ONE of these categories:\n"
+            "- DISEASE_DIAGNOSIS : If query specifically asks about plant leaf yellowing, spots, blights, pests, or disease symptoms.\n"
+            "- FERTILIZER_RECOMMENDATION : If query specifically asks about NPK fertilizer, urea dosage, soil nutrients, or Yala/Maha fertilizer schedules.\n"
             "- BOTH : If query asks about both plant disease/pests AND fertilizer/soil treatment.\n"
-            "- GENERAL : If query is about seed paddy standards, germination percentages, seed purity, quarantine acts, soil conservation, or general farming guidelines.\n\n"
+            "- GENERAL : If query asks about general paddy cultivation steps (ගොයම් වගා කරන ආකාරය), land preparation, seed paddy standards, germination, quarantine acts, or general farming guidelines.\n\n"
             "Respond ONLY with the category name string (DISEASE_DIAGNOSIS, FERTILIZER_RECOMMENDATION, BOTH, or GENERAL)."
         )
 

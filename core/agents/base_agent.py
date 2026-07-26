@@ -36,7 +36,7 @@ class BaseAgent(ABC):
         print(f"[{self.name}] Message {message_id} processed successfully.")
 
     def invoke_llm(self, messages: list) -> Any:
-        """Common LLM invocation with automatic multi-provider fallback if primary API hits quota/rate limits."""
+        """Common LLM invocation relying on LangChain's native with_fallbacks cascading."""
         try:
             start_time = time.time()
             response = self.model.invoke(messages)
@@ -44,22 +44,8 @@ class BaseAgent(ABC):
             print(f"[{self.name}] LLM response received in {duration:.2f}s")
             return response
         except Exception as e:
-            if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
-                from config.model_provider import set_gemini_quota_exhausted
-                set_gemini_quota_exhausted()
-            self._log_error(e, "Primary LLM invocation failed")
-            try:
-                from config.model_provider import get_reasoning_model
-                print(f"[{self.name}] Retrying invocation using resilient Groq 70B fallback model...")
-                fallback_model = get_reasoning_model(is_sinhala_or_singlish=False)
-                start_time = time.time()
-                response = fallback_model.invoke(messages)
-                duration = time.time() - start_time
-                print(f"[{self.name}] Fallback LLM response received in {duration:.2f}s")
-                return response
-            except Exception as fb_err:
-                self._log_error(fb_err, "Fallback LLM invocation failed")
-                raise e
+            self._log_error(e, "All fallback models failed during LLM invocation")
+            raise e
 
     @abstractmethod
     def process(self, message: AgentMessage) -> Any:

@@ -7,7 +7,7 @@ Defines typed message payloads passed between RouterAgent, DiagnosticAgent, and 
 from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, List, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 
 class QueryIntent(str, Enum):
@@ -72,7 +72,7 @@ class SafetyVerdict(BaseModel):
 
 class ReflectionResult(BaseModel):
     """Output produced by the ReflectionAgent after safety & quality verification."""
-    recommendation_id: str = Field(..., description="Unique ID linking back to parent recommendation")
+    recommendation_id: str = Field(default="refl_verified", description="Unique ID linking back to parent recommendation")
     all_checks_passed: bool = Field(default=False, description="Global pass/fail if ALL checks passed")
     verdicts: List[SafetyVerdict] = Field(default_factory=list, description="List of individual safety check results")
     warnings: List[str] = Field(default_factory=list, description="Aggregated warning messages")
@@ -83,10 +83,12 @@ class ReflectionResult(BaseModel):
 
 class AgentResponse(BaseModel):
     """Final synthesized response returned to the user."""
+    model_config = ConfigDict(arbitrary_types_allowed=True)
     query: str
     intent: QueryIntent
-    diagnostic_info: Optional[DiagnosticResult] = None
-    fertilizer_info: Optional[FertilizerRecommendation] = None
-    reflection_result: Optional[ReflectionResult] = None
+    diagnostic_info: Optional[Any] = None
+    fertilizer_info: Optional[Any] = None
+    general_info: Optional[str] = None
+    reflection_result: Optional[Any] = None
     final_synthesis: str
     message_trace: List[AgentMessage] = []

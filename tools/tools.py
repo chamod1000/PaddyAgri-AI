@@ -18,7 +18,7 @@ def get_cached_vector_store():
 
 
 @tool
-def rag_search_tool(query: str, top_k: int = 6) -> List[Dict[str, Any]]:
+def rag_search_tool(query: str, top_k: int = 4) -> List[Dict[str, Any]]:
     """
     Searches the paddy farming FAISS vector database for relevant domain knowledge chunks.
     Supports both English and Sinhala search queries.
@@ -46,6 +46,29 @@ def rag_search_tool(query: str, top_k: int = 6) -> List[Dict[str, Any]]:
         return chunks
     except Exception as e:
         print(f"[TOOL ERROR] RAG search failed: {e}")
+        return []
+
+
+@tool
+def web_search_tool(query: str, max_results: int = 3) -> List[Dict[str, str]]:
+    """
+    Searches the live internet for up-to-date agricultural information using DuckDuckGo.
+    Use this when the RAG vector store does not contain the answer, or to verify hypotheses.
+
+    Args:
+        query: Search query text.
+        max_results: Number of top web results to return.
+
+    Returns:
+        List of dictionaries containing 'title', 'href' (URL), and 'body' (snippet).
+    """
+    try:
+        from duckduckgo_search import DDGS
+        with DDGS() as ddgs:
+            results = list(ddgs.text(query, max_results=max_results))
+        return results
+    except Exception as e:
+        print(f"[TOOL ERROR] Web search failed: {e}")
         return []
 
 
