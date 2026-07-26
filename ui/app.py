@@ -34,7 +34,7 @@ st.set_page_config(
     page_title="PaddyAgri AI - Sri Lankan Agriculture Smart Portal",
     page_icon="🌾",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
 # ── Advanced Custom CSS Injection (Glassmorphism, High-Contrast & Micro-Interactions) ──
@@ -70,8 +70,13 @@ st.markdown("""
         font-family: 'Material Symbols Rounded', 'Material Symbols Outlined', 'Material Icons' !important;
     }
 
-    /* Hide standard streamlit elements */
+    /* Hide standard streamlit elements & complete sidebar removal */
     footer {visibility: hidden;}
+    [data-testid="stSidebar"], [data-testid="stSidebarNav"], [data-testid="collapsedControl"], button[data-testid="stSidebarCollapseButton"] {
+        display: none !important;
+        visibility: hidden !important;
+        width: 0 !important;
+    }
 
     /* Hero Banner */
     .hero-banner {
@@ -193,37 +198,25 @@ st.markdown("""
 
 
 # ══════════════════════════════════════════════
-# SIDEBAR (No Header Image - Clean Text Titles)
+# SECTION 1 — HERO BANNER & QUICK SUGGESTIONS
 # ══════════════════════════════════════════════
-with st.sidebar:
-    st.title("🌾 PaddyAgri AI")
-    st.caption("Sri Lankan Agriculture Smart Portal")
+banner_col, action_col = st.columns([4, 1])
+with banner_col:
+    st.markdown("""
+    <div class="hero-banner">
+        <div class="hero-title">🌾 PaddyAgri AI - Sri Lankan Agriculture Smart Portal</div>
+        <div class="hero-sub">Smart Paddy Disease Diagnosis & Fertilizer Recommendations for Sri Lankan Farmers</div>
+    </div>
+    """, unsafe_allow_html=True)
 
-    st.divider()
-
-
-
-    # 🗑️ Clear Chat History
-    if st.button("🗑️ Clear Chat History", use_container_width=True):
+with action_col:
+    st.write("")
+    if st.button("🗑️ Clear History", use_container_width=True):
         st.session_state.messages = []
         if "pending_chip_query" in st.session_state:
             st.session_state.pop("pending_chip_query", None)
         st.rerun()
-
-    st.markdown(
-        "🔗 [DOA Advisory PDF Corpus](https://drive.google.com/drive/folders/1O6Teo6_gPBZOd27rtzAI84RSTKKU5er9?usp=sharing)"
-    )
-
-
-# ══════════════════════════════════════════════
-# SECTION 1 — HERO BANNER & QUICK SUGGESTIONS
-# ══════════════════════════════════════════════
-st.markdown("""
-<div class="hero-banner">
-    <div class="hero-title">🌾 PaddyAgri AI - Sri Lankan Agriculture Smart Portal</div>
-    <div class="hero-sub">Smart Paddy Disease Diagnosis & Fertilizer Recommendations for Sri Lankan Farmers</div>
-</div>
-""", unsafe_allow_html=True)
+    st.markdown("[🔗 DOA PDF Corpus](https://drive.google.com/drive/folders/1O6Teo6_gPBZOd27rtzAI84RSTKKU5er9?usp=sharing)")
 
 # ── Quick Suggestion Chips ──
 st.markdown("##### 💡 Quick Suggestions — click any chip to auto-submit:")
