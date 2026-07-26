@@ -27,12 +27,26 @@ class DiagnosticAgent(BaseAgent):
         self._log_start(message)
         query = message.user_query
 
-        # Step 0: Language & script auto-detection for routing to dedicated Gemini model
+        # Step 0: Language & script auto-detection for routing
         is_sinhala_or_singlish = detect_language_and_script(query)
         self.model = get_reasoning_model(is_sinhala_or_singlish=is_sinhala_or_singlish)
 
-        # Step 1: Tool-Use Pattern - Retrieve RAG context chunks (Expanded top_k=6)
-        rag_results = rag_search_tool.invoke({"query": query, "top_k": 6})
+        # Step 1: High-Speed RAG Vector Search (FAISS Index)
+        from tools.tools import rag_search_tool
+        print(f"[{self.name}] Executing RAG Vector Search...")
+        rag_results = rag_search_tool.invoke({"query": query, "top_k": 4})
+
+        # Step 2: Fallback to Web Search ONLY if RAG yields insufficient chunks
+        web_context = ""
+        if not rag_results:
+            try:
+                from tools.tools import web_search_tool
+                print(f"[{self.name}] RAG empty, executing fallback Web Search...")
+                web_results = web_search_tool.invoke({"query": f"Sri Lanka paddy disease {query}", "max_results": 2})
+                for w in web_results:
+                    web_context += f"- [{w['title']}]({w['href']}): {w['body']}\n"
+            except Exception as e:
+                print(f"[{self.name}] Web search fallback skipped: {e}")
 
         sources: List[RAGContextChunk] = []
         context_str = ""
@@ -47,40 +61,33 @@ class DiagnosticAgent(BaseAgent):
             context_str += f"\n--- Source: {chunk['filename']} (Page {chunk['page']}) ---\n{chunk['content']}\n"
 
         # Step 2: Synthesis with Reasoning LLM & Explicit CoT prompting
-        is_sinhala_or_singlish = detect_language_and_script(query)
-
-        if is_sinhala_or_singlish:
-            lang_instruction = (
-                "CRITICAL SINHALA LANGUAGE MANDATE:\n"
-                "The farmer asked their query in Sinhala or Singlish.\n"
-                "You MUST write ALL JSON text values ('suspected_disease', 'symptoms_identified', 'treatment_recommended', 'confidence_level') 100% IN FORMAL, NATURAL SINHALA (සිංහල).\n"
-                "Example: 'suspected_disease': 'ගොයම් කොළ පාළු රෝගය (Paddy Blast)', 'symptoms_identified': ['පත්‍රවල දුඹුරු පැහැ ලප ඇතිවීම', 'පත්‍ර අග්‍ර කහ පැහැ වී වේලී යාම'].\n"
-                "Do NOT output plain English strings for disease names or symptoms when query is in Sinhala/Singlish.\n\n"
-            )
-        else:
-            lang_instruction = (
-                "Respond in clear, professional Simple English.\n\n"
-            )
-
         system_prompt = (
             "You are a Senior Agricultural Pathologist specializing in Sri Lankan Paddy Rice Diseases.\n"
-            "Analyze the farmer's query and the provided domain knowledge context to produce a diagnosis.\n\n"
-            f"{lang_instruction}"
-            "You must perform step-by-step Chain-of-Thought reasoning under the 'thought_process' field, analyzing:\n"
-            "A) The crop stage and environmental context.\n"
+            "Analyze the farmer's query and the provided domain knowledge context to produce a diagnosis.\n"
+            "Respond in clear, professional Simple English.\n\n"
+            "STRICT REGULATORY COMPLIANCE MANDATE:\n"
+            "- Comply strictly with Sri Lanka Control of Pesticides Act No. 33 of 1980.\n"
+            "- NEVER recommend banned WHO Class Ia/Ib toxic chemicals (e.g. Paraquat, Carbofuran, Endosulfan, Glyphosate).\n"
+            "- Recommend ONLY DOA approved fungicides/insecticides (e.g., Tebuconazole, Azoxystrobin, Hexaconazole).\n\n"
+            "Perform step-by-step reasoning under the 'thought_process' field, analyzing:\n"
+            "A) Crop stage and symptoms.\n"
             "B) RAG Handbook document matching references.\n"
             "C) Department of Agriculture safety limits and regulatory compliance.\n\n"
-            "You must return a valid JSON object with the following fields:\n"
+            "Return a valid JSON object matching this structure:\n"
             "{\n"
-            '  "thought_process": "Step-by-step reasoning analysis",\n'
-            '  "suspected_disease": "Name of disease/pest",\n'
-            '  "symptoms_identified": ["symptom 1", "symptom 2"],\n'
-            '  "treatment_recommended": ["control measure 1", "fungicide/insecticide 2"],\n'
-            '  "confidence_level": "High / Medium / Low"\n'
-            "}\n"
+            '  "thought_process": "Analysis of symptoms and RAG matches...",\n'
+            '  "suspected_disease": "Paddy Blast Disease (Pyricularia oryzae)",\n'
+            '  "symptoms_identified": ["Spindle-shaped brown lesions on leaves", "Leaf tip drying"],\n'
+            '  "treatment_recommended": ["Apply recommended fungicide (e.g. Tebuconazole)", "Avoid excessive nitrogen application"],\n'
+            '  "confidence_level": "High"\n'
+            "}"
         )
 
-        user_content = f"Farmer Query: {query}\n\nRetrieved Knowledge Base Context:\n{context_str}"
+        user_content = (
+            f"Farmer Query: {query}\n\n"
+            f"--- LIVE WEB SEARCH CONTEXT ---\n{web_context}\n\n"
+            f"--- RAG KNOWLEDGE BASE CONTEXT ---\n{context_str}"
+        )
         if feedback:
             user_content += (
                 f"\n\n⚠️ REFLECTION CRITIQUE & SELF-CORRECTION FEEDBACK:\n{feedback}\n"
@@ -109,6 +116,22 @@ class DiagnosticAgent(BaseAgent):
                 confidence_level=parsed.get("confidence_level", "Medium"),
                 rag_sources=sources
             )
+            
+            # Step 4: Auto-Learning (Second Brain) for Highly Confident Answers
+            if result.confidence_level.upper() == "HIGH":
+                from rag.rag_pipeline import auto_learn_text
+                import uuid
+                learned_content = (
+                    f"Query: {query}\n"
+                    f"Verified Disease: {result.suspected_disease}\n"
+                    f"Symptoms: {', '.join(result.symptoms_identified)}\n"
+                    f"Treatments: {', '.join(result.treatment_recommended)}"
+                )
+                try:
+                    auto_learn_text(learned_content, f"learned_{uuid.uuid4().hex[:6]}")
+                except Exception as e:
+                    print(f"[{self.name}] Failed to auto-learn: {e}")
+
             self._log_success(message.message_id)
             return result
         except Exception as e:

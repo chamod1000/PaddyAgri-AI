@@ -8,11 +8,13 @@ from core.agents.router_agent import RouterAgent
 from core.agents.diagnostic_agent import DiagnosticAgent
 from core.agents.fertilizer_agent import FertilizerAgent
 from core.agents.reflection_agent import ReflectionAgent
+from core.agents.synthesis_agent import SynthesisAgent
 
 __all__ = [
     "BaseAgent",
     "RouterAgent",
     "DiagnosticAgent",
     "FertilizerAgent",
-    "ReflectionAgent"
+    "ReflectionAgent",
+    "SynthesisAgent"
 ]

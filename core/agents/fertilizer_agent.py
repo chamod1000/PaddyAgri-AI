@@ -58,37 +58,27 @@ class FertilizerAgent(BaseAgent):
             context_str += f"\n--- Source: {chunk['filename']} (Page {chunk['page']}) ---\n{chunk['content']}\n"
 
         # Step 3: Synthesis with Reasoning LLM & Explicit CoT prompting
-        is_sinhala_or_singlish = detect_language_and_script(query)
-
-        if is_sinhala_or_singlish:
-            lang_instruction = (
-                "CRITICAL SINHALA LANGUAGE MANDATE:\n"
-                "The farmer asked their query in Sinhala or Singlish.\n"
-                "You MUST write ALL text values in 'application_schedule' 100% IN FORMAL, NATURAL SINHALA (සිංහල).\n"
-                "Example: 'application_schedule': ['මුලික පොහොර (බිම් සකස් කිරීමේදී): TSP 25kg + Urea 10kg', 'පළමු ඉහළ අතිරේක යෙදීම (සති 2 කදී): Urea 20kg'].\n"
-                "Do NOT output plain English strings for application steps when query is in Sinhala/Singlish.\n\n"
-            )
-        else:
-            lang_instruction = (
-                "Respond in clear, professional Simple English.\n\n"
-            )
-
         system_prompt = (
             "You are a Senior Agronomist and Soil Nutrient Specialist specializing in Sri Lankan Paddy Farming.\n"
-            "Analyze the farmer's query, the base fertilizer calculator rates, and the RAG context to output a comprehensive recommendation.\n\n"
-            f"{lang_instruction}"
-            "You must perform step-by-step Chain-of-Thought reasoning under the 'thought_process' field, analyzing:\n"
-            "A) The crop stage, target season, and environmental context.\n"
+            "Analyze the farmer's query, the base fertilizer calculator rates, and the RAG context to output a comprehensive recommendation.\n"
+            "Respond in clear, professional Simple English.\n\n"
+            "STRICT DOSAGE COMPLIANCE MANDATE:\n"
+            "- Urea dosage MUST NOT exceed 105 kg/acre for Maha season or 85 kg/acre for Yala season.\n"
+            "- TSP dosage MUST NOT exceed 35 kg/acre.\n"
+            "- MOP dosage MUST NOT exceed 35 kg/acre.\n\n"
+            "Perform step-by-step reasoning under the 'thought_process' field, analyzing:\n"
+            "A) Target season and environmental context.\n"
             "B) RAG Handbook document matching references.\n"
-            "C) Department of Agriculture safety limits and regulatory compliance.\n\n"
-            "You must return a valid JSON object with the following fields:\n"
+            "C) Department of Agriculture maximum NPK dosage limits.\n\n"
+            "Return a valid JSON object matching this structure:\n"
             "{\n"
-            '  "thought_process": "Step-by-step reasoning analysis",\n'
-            '  "urea_dosage_per_acre_kg": 0.0,\n'
-            '  "tsp_dosage_per_acre_kg": 0.0,\n'
-            '  "mop_dosage_per_acre_kg": 0.0,\n'
-            '  "application_schedule": ["step 1 description in Sinhala or English", "step 2 description"]\n'
-            "}\n"
+            '  "thought_process": "NPK rate calculation based on season and field size...",\n'
+            '  "urea_dosage_per_acre_kg": 50.0,\n'
+            '  "tsp_dosage_per_acre_kg": 25.0,\n'
+            '  "mop_dosage_per_acre_kg": 25.0,\n'
+            '  "season": "Yala",\n'
+            '  "application_schedule": ["Basal Dressing (Basal land prep): TSP 25kg + Urea 10kg", "Top Dressing 1 (2 weeks): Urea 20kg", "Top Dressing 2 (5 weeks): MOP 25kg + Urea 20kg"]\n'
+            "}"
         )
 
         user_content = (

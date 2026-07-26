@@ -1,0 +1,18 @@
+Farmer Query: What are the common symptoms of Paddy Blast disease and what chemical and organic treatments does the DOA recommend?
+Diagnosis: Paddy Blast Disease (Pyricularia oryzae)
+Recommended Treatment: Apply recommended fungicide (e.g. Azoxystrobin), Use resistant varieties, Implement cultural methods such as draining water and keeping fields dry, Consider organic treatments like neem oil
+Verified Advisory: ### 🔬 Disease Diagnosis Report
+**Suspected Disease:** Paddy Blast Disease (Pyricularia oryzae)
+**Confidence Level:** `High`
+
+#### 🔍 Key Symptoms Identified:
+- Small, circular, and sunken lesions on leaves
+- White or pinkish mycelium growth
+
+#### 🛡️ Recommended DOA Treatments:
+- Apply recommended fungicide (e.g. Azoxystrobin)
+- Use resistant varieties
+- Implement cultural methods such as draining water and keeping fields dry
+- Consider organic treatments like neem oil
+
+---

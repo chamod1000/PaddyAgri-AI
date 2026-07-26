@@ -6,17 +6,21 @@ Module: IT41043 - Agentic AI
 Author: Chamod
 
 Modern UI/UX Architecture:
-  1. Hero Banner + Quick Chips Grid
-  2. Above-The-Fold Chat Input Box (No Auto-Scroll down)
-  3. Conversational Message History Thread & Advisory Tabs
-  4. Perfectly Aligned 3-Column Farmer Toolkit Grid
+  1. Sprout Paddy Emerald Theme + WCAG AAA High Contrast Readability
+  2. Above-The-Fold Chat Input Box (Zero Auto-Scroll Jump on Initial Load)
+  3. Conversational Message History & 5-Section Detailed Advisory Reports
+  4. Perfectly Aligned 3-Column Glassmorphic Farmer Toolkit Grid
 """
 
 import os
 import sys
 import json
+import asyncio
+import nest_asyncio
 import streamlit as st
 from dotenv import load_dotenv
+
+nest_asyncio.apply()
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
@@ -33,102 +37,145 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ── Custom Modern UI CSS System ──
+# ── Advanced Custom CSS Injection (Glassmorphism, High-Contrast & Micro-Interactions) ──
 st.markdown("""
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-
-    html, body, [class*="css"] {
-        font-family: 'Inter', sans-serif;
-        font-size: 15px;
+    /* CSS Root Variable Tokenization */
+    :root {
+        --bg-primary: #06120b;
+        --bg-surface: rgba(14, 36, 24, 0.85);
+        --emerald-primary: #40c057;
+        --emerald-glow: #80ed99;
+        --harvest-gold: #fcc419;
+        --text-primary: #f4fce3;
+        --text-secondary: #b7e4c7;
+        --border-glass: rgba(64, 192, 87, 0.28);
     }
+
+    /* Base Environment */
+    html, body, [data-testid="stAppViewContainer"] {
+        font-family: 'Inter', sans-serif !important;
+        background-color: var(--bg-primary) !important;
+        color: var(--text-primary) !important;
+        scroll-behavior: smooth !important;
+    }
+
+    /* Restore Streamlit Material Icons font rendering */
+    button[data-testid="stSidebarCollapseButton"] span,
+    button[data-testid="stSidebarCollapseButton"] i,
+    [data-testid="stIconMaterial"],
+    .material-symbols-rounded,
+    .material-icons {
+        font-family: 'Material Symbols Rounded', 'Material Symbols Outlined', 'Material Icons' !important;
+    }
+
+    /* Hide standard streamlit elements */
+    footer {visibility: hidden;}
 
     /* Hero Banner */
     .hero-banner {
-        background: linear-gradient(135deg, #0b291a 0%, #134027 50%, #1e5a37 100%);
+        background: linear-gradient(135deg, #092215 0%, #113821 50%, #1b5231 100%);
         color: #ffffff;
         padding: 2.0rem 2.0rem;
         border-radius: 20px;
         text-align: center;
-        border: 1px solid rgba(64, 192, 87, 0.3);
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
-        margin-bottom: 1.0rem;
+        border: 1px solid var(--border-glass);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+        margin-bottom: 1.2rem;
     }
     .hero-title {
-        font-size: 2.2rem;
+        font-size: 2.3rem;
         font-weight: 800;
         letter-spacing: -0.5px;
-        background: linear-gradient(90deg, #ffffff, #80ed99);
+        background: linear-gradient(90deg, #ffffff, var(--emerald-glow));
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
     }
     .hero-sub {
         font-size: 1.05rem;
-        color: #c7f9cc;
+        color: var(--text-secondary);
         font-weight: 500;
         margin-top: 0.4rem;
     }
 
-    /* Glassmorphic Cards inside containers */
+    /* Clean Flat Executive Advisory Card */
+    .advisory-card-flat {
+        background: rgba(14, 36, 24, 0.5) !important;
+        border: 1px solid var(--border-glass) !important;
+        border-radius: 12px !important;
+        padding: 1.4rem !important;
+        box-shadow: none !important;
+        margin-bottom: 1.0rem !important;
+    }
+
+    /* Glassmorphic Container Cards */
     .glass-card {
-        background: rgba(20, 46, 32, 0.65);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border: 1px solid rgba(64, 192, 87, 0.22);
+        background: var(--bg-surface);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid var(--border-glass);
         border-radius: 14px;
-        padding: 1.0rem;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        padding: 1.2rem;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
         margin-bottom: 0.8rem;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .glass-card-hoverable:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(64, 192, 87, 0.3);
     }
     .glass-card-title {
         font-weight: 700;
-        font-size: 1.0rem;
-        color: #80ed99;
+        font-size: 1.05rem;
+        color: var(--emerald-glow);
         margin-bottom: 0.4rem;
     }
 
-    /* Badges */
-    .badge-pass {
-        background: rgba(40, 167, 69, 0.2);
-        color: #75b798;
-        padding: 0.6rem 1.2rem;
-        border-radius: 30px;
-        font-weight: 700;
-        font-size: 0.95rem;
-        display: inline-block;
-        border: 1px solid rgba(40, 167, 69, 0.4);
-        margin-bottom: 0.8rem;
+    /* Animated LED Indicator Pills */
+    .led-pill {
+        display: inline-flex;
+        align-items: center;
+        background: rgba(6, 18, 11, 0.7);
+        border: 1px solid var(--border-glass);
+        padding: 7px 14px;
+        border-radius: 50px;
+        font-size: 0.88rem;
+        font-weight: 600;
+        color: var(--text-secondary);
+        margin-bottom: 8px;
+        width: 100%;
     }
-    .badge-warn {
-        background: rgba(255, 193, 7, 0.2);
-        color: #ffda6a;
-        padding: 0.6rem 1.2rem;
-        border-radius: 30px;
-        font-weight: 700;
-        font-size: 0.95rem;
-        display: inline-block;
-        border: 1px solid rgba(255, 193, 7, 0.4);
-        margin-bottom: 0.8rem;
+    .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        margin-right: 10px;
+        background-color: var(--emerald-primary);
+        box-shadow: 0 0 10px var(--emerald-primary), 0 0 20px var(--emerald-primary);
+        animation: statusPulse 2s infinite;
+    }
+    @keyframes statusPulse {
+        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(64, 192, 87, 0.7); }
+        70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(64, 192, 87, 0); }
+        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(64, 192, 87, 0); }
     }
 
-    /* Disease Cards */
-    .disease-item {
-        background: rgba(15, 34, 23, 0.7);
-        border: 1px solid rgba(64, 192, 87, 0.18);
-        border-radius: 12px;
-        padding: 0.7rem 0.9rem;
-        margin-bottom: 0.5rem;
+    /* Action Buttons */
+    .stButton button {
+        background: rgba(17, 48, 30, 0.8) !important;
+        border: 1px solid var(--border-glass) !important;
+        color: var(--text-primary) !important;
+        border-radius: 10px !important;
+        font-weight: 600 !important;
+        transition: all 0.3s ease !important;
     }
-    .disease-name {
-        font-weight: 700;
-        color: #57cc99;
-        font-size: 0.95rem;
-    }
-    .disease-desc {
-        font-size: 0.85rem;
-        color: #c7f9cc;
-        margin-top: 0.2rem;
-        line-height: 1.4;
+    .stButton button:hover {
+        background: #194d2e !important;
+        border-color: var(--emerald-glow) !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 4px 18px rgba(64, 192, 87, 0.35) !important;
+        color: #ffffff !important;
     }
 
     /* Tabs Styling */
@@ -146,42 +193,11 @@ st.markdown("""
 
 
 # ══════════════════════════════════════════════
-# SIDEBAR
+# SIDEBAR (No Header Image - Clean Text Titles)
 # ══════════════════════════════════════════════
 with st.sidebar:
     st.title("🌾 PaddyAgri AI")
     st.caption("Sri Lankan Agriculture Smart Portal")
-
-    st.divider()
-
-    # System Status
-    st.subheader("⚙️ System Status")
-    gemini_key = os.getenv("GEMINI_API_KEY")
-    groq_key = os.getenv("GROQ_API_KEY")
-    cohere_key = os.getenv("COHERE_API_KEY")
-    openrouter_key = os.getenv("OPENROUTER_API_KEY")
-
-    if gemini_key:
-        st.success("🟢 Google Gemini Ready")
-    if groq_key:
-        st.success("🟢 Groq Llama 3.3 70B Ready")
-    if cohere_key:
-        st.success("🟢 Cohere Command R+ Ready")
-    if openrouter_key:
-        st.info("🔵 OpenRouter Standby")
-    if not (gemini_key or groq_key or cohere_key or openrouter_key):
-        st.error("🔴 API Key Missing")
-        st.info("Set `GEMINI_API_KEY`, `GROQ_API_KEY`, or `COHERE_API_KEY` in `.env`.")
-
-    st.divider()
-
-    # Advanced AI Developer Mode Toggle
-    dev_mode = st.checkbox(
-        "⚡ Advanced AI Developer Mode (Raw Agent Communication Trace)",
-        value=False
-    )
-    if dev_mode:
-        st.warning("Developer Mode ON — raw Agent-to-Agent JSON traces visible in assistant response tabs.")
 
     st.divider()
 
@@ -249,19 +265,68 @@ st.divider()
 
 
 # ══════════════════════════════════════════════
-# SECTION 2 — NATIVE CHAT INPUT (Placed Top / Above-the-Fold)
+# SECTION 2 — TOP-POSITIONED MODERN QUERY INPUT (UI/UX Best Practice)
 # ══════════════════════════════════════════════
 
-user_query = st.chat_input(
-    "Ask your paddy farming question in English, Sinhala, or Singlish...",
-    key="chat_input_main"
-)
+with st.form(key="top_query_form", clear_on_submit=True):
+    col_input, col_btn = st.columns([5, 1])
+    with col_input:
+        query_text = st.text_input(
+            "Ask Agri AI Question",
+            placeholder="✨ Type your agricultural query, disease symptoms, or fertilizer question...",
+            label_visibility="collapsed",
+            key="top_search_input"
+        )
+    with col_btn:
+        submit_clicked = st.form_submit_button("⚡ Ask AI Assistant", use_container_width=True)
 
-# Helper function to run orchestrator
-def run_orchestrator(query: str):
+user_query = query_text.strip() if (submit_clicked and query_text and query_text.strip()) else None
+
+# Helper function to run orchestrator with live step highlights
+def run_orchestrator_with_live_highlights(query: str, status):
+    step_box = st.empty()
+
+    def render_steps(active_step: int, live_msg: str = "", done: bool = False):
+        steps = [
+            ("🎯", "1. RouterAgent", "Classifying query intent & agricultural domain context (OpenRouter / Groq)"),
+            ("📚", "2. RAG Retriever", "Searching 20+ DOA PDF Handbooks in parallel (FAISS Index)"),
+            ("🔬", "3. Diagnostic & Fertilizer Agents", "Synthesizing pathology & NPK schedule (Claude / Gemini Pro / Llama 70B)"),
+            ("🛡️", "4. Regulatory Compliance", "Pesticide Act No. 33 & DOA Fertilizer Ordinance Verified (Built-in Filter)")
+        ]
+        html_content = '<div style="margin-top: 6px;">'
+        for idx, (icon, title, desc) in enumerate(steps, 1):
+            if done or idx < active_step:
+                html_content += f'''
+                <div style="padding: 8px 14px; margin-bottom: 8px; border-radius: 10px; background: rgba(64, 192, 87, 0.12); border: 1px solid rgba(64, 192, 87, 0.4); color: #80ed99; font-size: 0.93rem;">
+                    ✅ <b>{title}</b> — <span style="color: #b7e4c7;">{desc}</span> <span style="float: right; font-weight: 700; color: #40c057;">[COMPLETED]</span>
+                </div>'''
+            elif idx == active_step:
+                detail_text = f" — <span style='color: #fff;'>{live_msg or desc}</span>"
+                html_content += f'''
+                <div style="padding: 10px 15px; margin-bottom: 8px; border-radius: 10px; background: linear-gradient(90deg, rgba(64, 192, 87, 0.25), rgba(252, 196, 25, 0.2)); border: 2px solid #fcc419; color: #ffffff; font-weight: 600; font-size: 0.95rem; box-shadow: 0 0 15px rgba(252, 196, 25, 0.4);">
+                    ⏳ {icon} <b>{title}</b>{detail_text} <span style="float: right; color: #fcc419; font-weight: 800;">⚡ EXECUTING...</span>
+                </div>'''
+            else:
+                html_content += f'''
+                <div style="padding: 8px 14px; margin-bottom: 8px; border-radius: 10px; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.08); color: #7a8880; font-size: 0.9rem;">
+                    ⏸️ {icon} <b>{title}</b> — <span>{desc}</span> <span style="float: right; color: #6c757d;">[WAITING]</span>
+                </div>'''
+        html_content += '</div>'
+        step_box.markdown(html_content, unsafe_allow_html=True)
+
+    render_steps(active_step=1, live_msg="Initializing Swarm Agents...")
+
+    def live_step_callback(step_num: int, label: str):
+        status.update(label=f"⚡ Live Swarm Tracking — Step {step_num}/4: {label}", state="running")
+        render_steps(active_step=step_num, live_msg=label)
+
     from core.agent_orchestrator import PaddyAgentOrchestrator
     orchestrator = PaddyAgentOrchestrator()
-    return orchestrator.process_user_request(query)
+    response, synthesis_agent = orchestrator.process_user_request(query, stream=True, step_callback=live_step_callback)
+
+    render_steps(active_step=4, done=True)
+    status.update(label="✅ All 4 Multi-Agent Tasks Completed Successfully! Synthesizing Answer...", state="complete", expanded=False)
+    return response, synthesis_agent
 
 # Initialize chat history
 if "messages" not in st.session_state:
@@ -272,15 +337,36 @@ pending = st.session_state.pop("pending_chip_query", None)
 if pending:
     with st.chat_message("user"):
         st.markdown(pending)
-    with st.spinner("🔄 Agents searching agricultural handbooks in parallel and checking safety rules…"):
+    with st.status("⚡ Multi-Agent Intelligence Network Executing...", expanded=True) as status:
         try:
-            response = run_orchestrator(pending)
+            response, synthesis_agent = run_orchestrator_with_live_highlights(pending, status)
         except Exception as e:
+            status.update(label="❌ Execution Error Occurred", state="error", expanded=True)
             st.error(f"Runtime Error: {e}")
             st.info("Check your `.env` API keys and agent orchestrator imports.")
             st.stop()
 
     st.session_state.messages.append({"role": "user", "content": pending})
+    
+    with st.chat_message("assistant"):
+        stream_gen = synthesis_agent.synthesize_stream(
+            user_query=pending,
+            diagnostic_info=response.diagnostic_info,
+            fertilizer_info=response.fertilizer_info,
+            general_info=response.general_info,
+            reflection_result=response.reflection_result
+        )
+        final_synthesis = st.write_stream(stream_gen)
+        response.final_synthesis = final_synthesis
+
+        # Auto-Learning (Second Brain Persistence & FAISS Re-indexing)
+        if response and hasattr(response, 'diagnostic_info') and response.diagnostic_info:
+            if str(getattr(response.diagnostic_info, 'confidence_level', '')).lower() in ['high', '85%', '90%', '95%']:
+                import threading, uuid
+                from rag.rag_pipeline import auto_learn_text
+                learned_content = f"Farmer Query: {pending}\nDiagnosis: {response.diagnostic_info.suspected_disease}\nRecommended Treatment: {', '.join(response.diagnostic_info.treatment_recommended)}\nVerified Advisory: {final_synthesis}"
+                threading.Thread(target=auto_learn_text, args=(learned_content, f"learned_{uuid.uuid4().hex[:8]}"), daemon=True).start()
+
     st.session_state.messages.append({
         "role": "assistant",
         "content": response.final_synthesis,
@@ -295,13 +381,33 @@ if user_query and user_query.strip():
     with st.chat_message("user"):
         st.markdown(user_query.strip())
 
-    with st.spinner("🔄 Agents searching agricultural handbooks in parallel and checking safety rules…"):
+    with st.status("⚡ Multi-Agent Intelligence Network Executing...", expanded=True) as status:
         try:
-            response = run_orchestrator(user_query.strip())
+            response, synthesis_agent = run_orchestrator_with_live_highlights(user_query.strip(), status)
         except Exception as e:
+            status.update(label="❌ Execution Error Occurred", state="error", expanded=True)
             st.error(f"Runtime Error: {e}")
             st.info("Check your `.env` API keys and agent orchestrator imports.")
             st.stop()
+            
+    with st.chat_message("assistant"):
+        stream_gen = synthesis_agent.synthesize_stream(
+            user_query=user_query.strip(),
+            diagnostic_info=response.diagnostic_info,
+            fertilizer_info=response.fertilizer_info,
+            general_info=response.general_info,
+            reflection_result=response.reflection_result
+        )
+        final_synthesis = st.write_stream(stream_gen)
+        response.final_synthesis = final_synthesis
+
+        # Auto-Learning (Second Brain Persistence & FAISS Re-indexing)
+        if response and hasattr(response, 'diagnostic_info') and response.diagnostic_info:
+            if str(getattr(response.diagnostic_info, 'confidence_level', '')).lower() in ['high', '85%', '90%', '95%']:
+                import threading, uuid
+                from rag.rag_pipeline import auto_learn_text
+                learned_content = f"Farmer Query: {user_query.strip()}\nDiagnosis: {response.diagnostic_info.suspected_disease}\nRecommended Treatment: {', '.join(response.diagnostic_info.treatment_recommended)}\nVerified Advisory: {final_synthesis}"
+                threading.Thread(target=auto_learn_text, args=(learned_content, f"learned_{uuid.uuid4().hex[:8]}"), daemon=True).start()
 
     st.session_state.messages.append({
         "role": "assistant",
@@ -330,34 +436,22 @@ for msg in st.session_state.messages:
                 st.markdown(msg["content"])
                 continue
 
-            # Dynamic Tab Labels based on language
-            msg_query = msg.get("query", msg.get("content", ""))
-            from config.model_provider import detect_language_and_script
-            is_sinhala = detect_language_and_script(msg_query)
-
-            if is_sinhala:
-                tab_labels = [
-                    "📋 ගොවි උපදෙස් පත්‍රිකාව",
-                    "📚 තහවුරු කළ රාජ්‍ය මූලාශ්‍ර",
-                    "🛡️ ආරක්‍ෂිත සහ රාජ්‍ය ප්‍රමිතීන්"
-                ]
-            else:
-                tab_labels = [
-                    "📋 Advisory Report",
-                    "📚 Official DOA Guidelines",
-                    "🛡️ Safety & Regulatory Checks"
-                ]
+            tab_labels = [
+                "📋 Advisory Report",
+                "📚 Official DOA Guidelines",
+                "🛡️ Safety & Regulatory Checks"
+            ]
 
             if dev_mode:
                 tab_labels.append("⚡ Developer Agent Trace")
 
             tabs = st.tabs(tab_labels)
 
-            # TAB 1 — Formatted Advisory Report & Download TXT
+            # TAB 1 — Formatted 5-Section Executive Advisory Report & Download TXT
             with tabs[0]:
                 st.markdown(response.final_synthesis)
                 st.download_button(
-                    label="📥 Download Advisory Report (.txt)",
+                    label="📥 Download Detailed Executive Advisory (.txt)",
                     data=response.final_synthesis,
                     file_name="paddy_advisory_report.txt",
                     mime="text/plain",
@@ -391,19 +485,9 @@ for msg in st.session_state.messages:
                 refl = response.reflection_result if hasattr(response, "reflection_result") else None
                 if refl:
                     if refl.all_checks_passed:
-                        st.markdown(
-                            '<div class="badge-pass">'
-                            "✅ ALL CHECKS PASSED — Recommendations comply with Pesticide Act No.33 and Fertilizer Ordinance limits"
-                            "</div>",
-                            unsafe_allow_html=True
-                        )
+                        st.success("✅ ALL CHECKS PASSED — Recommendations comply with Pesticide Act No.33 and Fertilizer Ordinance limits")
                     else:
-                        st.markdown(
-                            '<div class="badge-warn">'
-                            "⚠️ ATTENTION — Some chemicals may be restricted or require additional precautions"
-                            "</div>",
-                            unsafe_allow_html=True
-                        )
+                        st.warning("⚠️ ATTENTION — Some chemicals may be restricted or require additional precautions")
 
                     st.markdown("#### Safety Verdict Details:")
                     for v in refl.verdicts:
@@ -486,7 +570,7 @@ with tool_col2:
         st.caption("Best practices for Yala & Maha")
 
         st.markdown("""
-        <div class="glass-card">
+        <div class="glass-card glass-card-hoverable">
             <div class="glass-card-title">🌾 Yala Season (May – August)</div>
             <ul style="margin:0; padding-left:1.2rem;">
                 <li>Harvest standing crops promptly to avoid rain.</li>
@@ -494,7 +578,7 @@ with tool_col2:
                 <li>Apply basal fertilizer at land prep.</li>
             </ul>
         </div>
-        <div class="glass-card" style="margin-bottom:0;">
+        <div class="glass-card glass-card-hoverable" style="margin-bottom:0;">
             <div class="glass-card-title">🌧️ Maha Season (Sept – March)</div>
             <ul style="margin:0; padding-left:1.2rem;">
                 <li>Incorporate organic matter during wet ploughing.</li>
@@ -511,20 +595,20 @@ with tool_col3:
         st.caption("Visual symptoms & fast diagnosis")
 
         st.markdown("""
-        <div class="disease-item">
-            <div class="disease-name">🍂 Paddy Blast (Pyricularia oryzae)</div>
-            <div class="disease-desc">Diamond-shaped spots. Spray Tricyclazole.</div>
+        <div class="glass-card glass-card-hoverable" style="padding:0.7rem;">
+            <div class="glass-card-title">🍂 Paddy Blast (Pyricularia oryzae)</div>
+            <div style="font-size:0.85rem; color:#b7e4c7;">Diamond-shaped spots. Spray Tricyclazole.</div>
         </div>
-        <div class="disease-item">
-            <div class="disease-name">🟤 Brown Spot (Bipolaris oryzae)</div>
-            <div class="disease-desc">Oval brown leaf lesions. Apply K & Zn.</div>
+        <div class="glass-card glass-card-hoverable" style="padding:0.7rem;">
+            <div class="glass-card-title">🟤 Brown Spot (Bipolaris oryzae)</div>
+            <div style="font-size:0.85rem; color:#b7e4c7;">Oval brown leaf lesions. Apply K & Zn.</div>
         </div>
-        <div class="disease-item">
-            <div class="disease-name">🌿 Sheath Blight (Rhizoctonia)</div>
-            <div class="disease-desc">Grey-green patches. Apply Hexaconazole.</div>
+        <div class="glass-card glass-card-hoverable" style="padding:0.7rem;">
+            <div class="glass-card-title">🌿 Sheath Blight (Rhizoctonia)</div>
+            <div style="font-size:0.85rem; color:#b7e4c7;">Grey-green patches. Apply Hexaconazole.</div>
         </div>
-        <div class="disease-item" style="margin-bottom:0;">
-            <div class="disease-name">🐛 Brown Planthopper (BPH)</div>
-            <div class="disease-desc">Circular yellowing ('hopper burn'). Drain fields.</div>
+        <div class="glass-card glass-card-hoverable" style="padding:0.7rem; margin-bottom:0;">
+            <div class="glass-card-title">🐛 Brown Planthopper (BPH)</div>
+            <div style="font-size:0.85rem; color:#b7e4c7;">Circular yellowing ('hopper burn'). Drain fields.</div>
         </div>
         """, unsafe_allow_html=True)

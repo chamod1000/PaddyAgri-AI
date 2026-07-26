@@ -1,7 +1,8 @@
-# Multi-Agent Paddy Disease Diagnostic and Fertilizer Recommendation System for Sri Lankan Farmers
+# 🌾 PaddyAgri AI (`paddy-agri-ai`)
+### Multi-Agent Paddy Disease Diagnostic & Fertilizer Advisory System for Sri Lanka
 
 **Module:** IT41043 - Agentic AI (Horizon Campus)  
-**Branches:** `master` | `feature/streamlit-ui` | `feature/agent-orchestration` | `feature/rag-pipeline`
+**Repository:** `paddy-agri-ai` | **Branches:** `master` | `feature/streamlit-ui` | `feature/agent-orchestration` | `feature/rag-pipeline`
 
 ---
 

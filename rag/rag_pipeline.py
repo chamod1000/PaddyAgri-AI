@@ -34,6 +34,32 @@ import sys
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
 
+def load_text_documents(data_path: Path) -> List[Document]:
+    """
+    Loads text files from the Data/Learned directory for self-updating RAG.
+    """
+    documents: List[Document] = []
+    if not data_path.exists():
+        return documents
+
+    from langchain_community.document_loaders import TextLoader
+    txt_files = list(data_path.rglob("*.txt"))
+    print(f"[INFO] Found {len(txt_files)} learned text files in {data_path}")
+
+    for txt_path in txt_files:
+        try:
+            loader = TextLoader(str(txt_path), encoding='utf-8')
+            loaded_docs = loader.load()
+            for doc in loaded_docs:
+                doc.metadata["category"] = "Self-Learned"
+                doc.metadata["filename"] = txt_path.name
+                doc.metadata["source"] = str(txt_path)
+            documents.extend(loaded_docs)
+        except Exception as e:
+            print(f"  -> [ERROR] Failed to load {txt_path.name}: {e}")
+    return documents
+
+
 def load_pdf_documents(data_path: Path) -> List[Document]:
     """
     Recursively scans the Data/PDF directory and loads all PDF files.
@@ -138,17 +164,57 @@ def create_or_load_vector_store(
 
     if not chunks:
         print("[INFO] FAISS index missing on disk. Auto-loading PDF documents to build vector store...")
-        documents = load_pdf_documents(DATA_DIR)
-        if documents:
-            chunks = chunk_documents(documents, chunk_size=1000, chunk_overlap=200)
+        
+        pdf_documents = load_pdf_documents(DATA_DIR)
+        
+        learned_dir = BASE_DIR / "Data" / "Learned"
+        if not learned_dir.exists():
+            learned_dir.mkdir(parents=True, exist_ok=True)
+        text_documents = load_text_documents(learned_dir)
+        
+        all_documents = pdf_documents + text_documents
+        
+        if all_documents:
+            chunks = chunk_documents(all_documents, chunk_size=1000, chunk_overlap=200)
         else:
-            raise ValueError("No PDF documents found in Data/PDF/ to build vector store.")
+            raise ValueError("No documents found in Data/PDF/ or Data/Learned/ to build vector store.")
 
     print("[INFO] Generating embeddings and building FAISS vector database...")
     vector_store = FAISS.from_documents(chunks, embeddings)
     vector_store.save_local(str(FAISS_INDEX_DIR))
     print(f"[SUCCESS] FAISS vector store saved to {FAISS_INDEX_DIR}")
     return vector_store
+
+
+def auto_learn_text(text: str, source_id: str):
+    """
+    Dynamically injects new confirmed knowledge into the FAISS vector store
+    and saves it to the Data/Learned directory for persistence.
+    """
+    global _CACHED_VECTOR_STORE
+    
+    # 1. Save persistently to disk
+    learned_dir = BASE_DIR / "Data" / "Learned"
+    learned_dir.mkdir(parents=True, exist_ok=True)
+    file_path = learned_dir / f"{source_id}.txt"
+    with open(file_path, "w", encoding="utf-8") as f:
+        f.write(text)
+    
+    # 2. Inject into live vector store
+    vector_store = create_or_load_vector_store()
+    
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=1000,
+        chunk_overlap=200,
+        separators=["\n\n", "\n", ". ", " ", ""]
+    )
+    chunks = text_splitter.split_text(text)
+    
+    metadatas = [{"category": "Self-Learned", "filename": f"{source_id}.txt", "source": "Auto-Generated"} for _ in chunks]
+    
+    vector_store.add_texts(texts=chunks, metadatas=metadatas)
+    vector_store.save_local(str(FAISS_INDEX_DIR))
+    print(f"[SUCCESS] Learned new information and injected into FAISS: {source_id}")
 
 
 def evaluate_retrieval(vector_store: FAISS, sample_queries: Optional[List[str]] = None, top_k: int = 3):

@@ -1,0 +1,4 @@
+Query: What are the symptoms of Paddy Blast disease and how to control it?
+Verified Disease: Paddy Blast disease
+Symptoms: sudden death of young seedlings, yellowing or browning of leaves, characteristic 'blast' or 'blast-like' appearance on the leaves
+Treatments: use of resistant varieties, crop rotation, seed treatment, fungicide application, cultural practices, biological control, integrated pest management (IPM)
