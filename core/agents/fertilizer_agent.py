@@ -8,7 +8,7 @@ from typing import List, Optional
 
 from core.agent_messages import AgentMessage, FertilizerRecommendation, RAGContextChunk
 from core.agents.base_agent import BaseAgent
-from config.model_provider import get_reasoning_model, detect_language_and_script
+from config.model_provider import get_reasoning_model
 from tools.tools import rag_search_tool, fertilizer_calculator_tool
 
 
@@ -16,7 +16,6 @@ class FertilizerAgent(BaseAgent):
     """
     Specialized agent for soil nutrient requirements and fertilizer application scheduling.
     Uses deep reasoning model + Fertilizer Dosage Calculator tool + RAG search tool.
-    Dynamically routes to Gemini if Sinhala or Singlish language is detected.
     Supports Explicit Chain-of-Thought (CoT) and Self-Correction Loop.
     """
 
@@ -28,12 +27,8 @@ class FertilizerAgent(BaseAgent):
         self._log_start(message)
         query = message.user_query
 
-        # Step 0: Language & script auto-detection for routing to dedicated Gemini model
-        is_sinhala_or_singlish = detect_language_and_script(query)
-        self.model = get_reasoning_model(is_sinhala_or_singlish=is_sinhala_or_singlish)
-
         # Determine season and district from query context
-        season = "Yala" if "yala" in query.lower() or "යල" in query else "Maha"
+        season = "Yala" if "yala" in query.lower() else "Maha"
         district = "Polonnaruwa"  # Default major paddy district
 
         # Step 1: Tool-Use - Calculate base dosage
@@ -43,8 +38,8 @@ class FertilizerAgent(BaseAgent):
             "field_size_acres": 1.0
         })
 
-        # Step 2: Tool-Use - RAG search for specific soil/fertilizer guidelines (Expanded top_k=6)
-        rag_results = rag_search_tool.invoke({"query": f"fertilizer recommendations {season} paddy", "top_k": 6})
+        # Step 2: Tool-Use - RAG search for specific soil/fertilizer guidelines
+        rag_results = rag_search_tool.invoke({"query": query, "top_k": 3})
         sources: List[RAGContextChunk] = []
         context_str = ""
         for chunk in rag_results:
@@ -57,27 +52,17 @@ class FertilizerAgent(BaseAgent):
             ))
             context_str += f"\n--- Source: {chunk['filename']} (Page {chunk['page']}) ---\n{chunk['content']}\n"
 
-        # Step 3: Synthesis with Reasoning LLM & Explicit CoT prompting
+        # Step 3: High-Speed Structured Synthesis with Reasoning LLM
         system_prompt = (
-            "You are a Senior Agronomist and Soil Nutrient Specialist specializing in Sri Lankan Paddy Farming.\n"
-            "Analyze the farmer's query, the base fertilizer calculator rates, and the RAG context to output a comprehensive recommendation.\n"
-            "Respond in clear, professional Simple English.\n\n"
-            "STRICT DOSAGE COMPLIANCE MANDATE:\n"
-            "- Urea dosage MUST NOT exceed 105 kg/acre for Maha season or 85 kg/acre for Yala season.\n"
-            "- TSP dosage MUST NOT exceed 35 kg/acre.\n"
-            "- MOP dosage MUST NOT exceed 35 kg/acre.\n\n"
-            "Perform step-by-step reasoning under the 'thought_process' field, analyzing:\n"
-            "A) Target season and environmental context.\n"
-            "B) RAG Handbook document matching references.\n"
-            "C) Department of Agriculture maximum NPK dosage limits.\n\n"
-            "Return a valid JSON object matching this structure:\n"
+            "You are a Sri Lankan Paddy Agronomist. Recommend NPK fertilizer using the calculator rates and RAG context.\n"
+            "LIMITS: Urea ≤105kg/ac (Maha), ≤85kg/ac (Yala). TSP ≤35kg/ac. MOP ≤35kg/ac.\n"
+            "Return ONLY a JSON object:\n"
             "{\n"
-            '  "thought_process": "NPK rate calculation based on season and field size...",\n'
             '  "urea_dosage_per_acre_kg": 50.0,\n'
             '  "tsp_dosage_per_acre_kg": 25.0,\n'
             '  "mop_dosage_per_acre_kg": 25.0,\n'
             '  "season": "Yala",\n'
-            '  "application_schedule": ["Basal Dressing (Basal land prep): TSP 25kg + Urea 10kg", "Top Dressing 1 (2 weeks): Urea 20kg", "Top Dressing 2 (5 weeks): MOP 25kg + Urea 20kg"]\n'
+            '  "application_schedule": ["Basal: TSP 25kg + Urea 10kg", "Top 1 (2wk): Urea 20kg", "Top 2 (5wk): MOP 25kg + Urea 20kg"]\n'
             "}"
         )
 
@@ -109,7 +94,7 @@ class FertilizerAgent(BaseAgent):
 
             parsed = json.loads(raw_text)
             result = FertilizerRecommendation(
-                thought_process=parsed.get("thought_process", "CoT Completed"),
+                thought_process=parsed.get("thought_process", "Calculated via DOA NPK Guidelines"),
                 season=season,
                 district_zone=district,
                 urea_dosage_per_acre_kg=float(parsed.get("urea_dosage_per_acre_kg", calc_result["urea_kg"])),

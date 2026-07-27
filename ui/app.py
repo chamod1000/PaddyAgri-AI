@@ -15,12 +15,8 @@ Modern UI/UX Architecture:
 import os
 import sys
 import json
-import asyncio
-import nest_asyncio
 import streamlit as st
 from dotenv import load_dotenv
-
-nest_asyncio.apply()
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
@@ -200,26 +196,26 @@ st.markdown("""
 # ══════════════════════════════════════════════
 # SECTION 1 — HERO BANNER & QUICK SUGGESTIONS
 # ══════════════════════════════════════════════
-banner_col, action_col = st.columns([4, 1])
-with banner_col:
-    st.markdown("""
-    <div class="hero-banner">
-        <div class="hero-title">🌾 PaddyAgri AI - Sri Lankan Agriculture Smart Portal</div>
-        <div class="hero-sub">Smart Paddy Disease Diagnosis & Fertilizer Recommendations for Sri Lankan Farmers</div>
-    </div>
-    """, unsafe_allow_html=True)
+st.markdown("""
+<div class="hero-banner">
+    <div class="hero-title">🌾 PaddyAgri AI - Sri Lankan Agriculture Smart Portal</div>
+    <div class="hero-sub">Smart Paddy Disease Diagnosis & Fertilizer Recommendations for Sri Lankan Farmers</div>
+</div>
+""", unsafe_allow_html=True)
 
-with action_col:
-    st.write("")
+# ── Top Action Toolbar & Quick Suggestions Header ──
+tool_title_col, tool_btn1_col, tool_btn2_col = st.columns([3, 1, 1])
+with tool_title_col:
+    st.markdown("##### 💡 Quick Suggestions — click any chip to auto-submit:")
+with tool_btn1_col:
     if st.button("🗑️ Clear History", use_container_width=True):
         st.session_state.messages = []
         if "pending_chip_query" in st.session_state:
             st.session_state.pop("pending_chip_query", None)
         st.rerun()
-    st.markdown("[🔗 DOA PDF Corpus](https://drive.google.com/drive/folders/1O6Teo6_gPBZOd27rtzAI84RSTKKU5er9?usp=sharing)")
+with tool_btn2_col:
+    st.link_button("📚 DOA PDF Corpus", "https://drive.google.com/drive/folders/1O6Teo6_gPBZOd27rtzAI84RSTKKU5er9?usp=sharing", use_container_width=True)
 
-# ── Quick Suggestion Chips ──
-st.markdown("##### 💡 Quick Suggestions — click any chip to auto-submit:")
 chip1, chip2, chip3, chip4 = st.columns(4)
 
 quick_queries = {
@@ -305,7 +301,13 @@ def run_orchestrator_with_live_highlights(query: str, status):
         render_steps(active_step=step_num, live_msg=label)
 
     from core.agent_orchestrator import PaddyAgentOrchestrator
-    orchestrator = PaddyAgentOrchestrator()
+
+    @st.cache_resource(show_spinner=False)
+    def get_cached_orchestrator():
+        """Singleton: creates orchestrator + all agents + FAISS index ONCE, reuses forever."""
+        return PaddyAgentOrchestrator()
+
+    orchestrator = get_cached_orchestrator()
     response, synthesis_agent = orchestrator.process_user_request(query, stream=True, step_callback=live_step_callback)
 
     render_steps(active_step=4, done=True)
@@ -426,9 +428,6 @@ for msg in st.session_state.messages:
                 "🛡️ Safety & Regulatory Checks"
             ]
 
-            if dev_mode:
-                tab_labels.append("⚡ Developer Agent Trace")
-
             tabs = st.tabs(tab_labels)
 
             # TAB 1 — Formatted 5-Section Executive Advisory Report & Download TXT
@@ -484,28 +483,6 @@ for msg in st.session_state.messages:
                             st.write(f"📜 {cite}")
                 else:
                     st.info("General query — no chemical safety or regulatory checks required.")
-
-            # TAB 4 — Developer JSON Trace (only when toggled)
-            if dev_mode:
-                with tabs[3]:
-                    st.markdown("### ⚡ Developer Diagnostics — Agent-to-Agent Message Trace")
-                    intent_val = response.intent.value if hasattr(response, "intent") else "N/A"
-                    trace_len = len(response.message_trace) if hasattr(response, "message_trace") else 0
-                    st.info(f"**Intent:** {intent_val} · **Messages Exchanged:** {trace_len}")
-                    if hasattr(response, "message_trace") and response.message_trace:
-                        for idx, mt in enumerate(response.message_trace, 1):
-                            with st.expander(
-                                f"✉️ #{idx}: {mt.sender} ➔ {mt.receiver} [{mt.intent.value}]",
-                                expanded=True
-                            ):
-                                st.json({
-                                    "message_id": mt.message_id,
-                                    "sender": mt.sender,
-                                    "receiver": mt.receiver,
-                                    "intent": mt.intent.value,
-                                    "timestamp": mt.timestamp,
-                                    "payload": mt.payload
-                                })
 
 
 # ══════════════════════════════════════════════

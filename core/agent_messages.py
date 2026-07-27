@@ -26,7 +26,7 @@ class AgentMessage(BaseModel):
     sender: str = Field(..., description="Name of the sending agent")
     receiver: str = Field(..., description="Name of the receiving agent")
     intent: QueryIntent = Field(..., description="Classified intent of the request")
-    user_query: str = Field(..., description="Original user query in Sinhala or English")
+    user_query: str = Field(..., description="Original user query")
     payload: Dict[str, Any] = Field(default_factory=dict, description="Custom payload metadata")
     timestamp: str = Field(default_factory=lambda: datetime.now().isoformat())
 
@@ -88,7 +88,7 @@ class AgentResponse(BaseModel):
     intent: QueryIntent
     diagnostic_info: Optional[Any] = None
     fertilizer_info: Optional[Any] = None
-    general_info: Optional[str] = None
+    general_info: Optional[Any] = None
     reflection_result: Optional[Any] = None
     final_synthesis: str
     message_trace: List[AgentMessage] = []

@@ -5,23 +5,32 @@ Provides tools for RAG vector search retrieval and fertilizer dosage calculation
 """
 
 from typing import Dict, List, Any
-import streamlit as st
 from langchain_core.tools import tool
 from core.agent_messages import RAGContextChunk
 
+# Global singleton cache for vector store (works in both Streamlit and CLI)
+_CACHED_VECTOR_STORE = None
 
-@st.cache_resource(show_spinner=False)
+
 def get_cached_vector_store():
-    """Caches the FAISS vector database to ensure embeddings load instantly across executions."""
+    """
+    Caches the FAISS vector database to ensure embeddings load instantly across executions.
+    Works in both Streamlit and CLI environments (no st.cache_resource dependency).
+    """
+    global _CACHED_VECTOR_STORE
+    if _CACHED_VECTOR_STORE is not None:
+        return _CACHED_VECTOR_STORE
+
     from rag.rag_pipeline import create_or_load_vector_store
-    return create_or_load_vector_store(force_rebuild=False)
+    _CACHED_VECTOR_STORE = create_or_load_vector_store(force_rebuild=False)
+    return _CACHED_VECTOR_STORE
 
 
 @tool
 def rag_search_tool(query: str, top_k: int = 4) -> List[Dict[str, Any]]:
     """
     Searches the paddy farming FAISS vector database for relevant domain knowledge chunks.
-    Supports both English and Sinhala search queries.
+    Supports English search queries.
 
     Args:
         query: Search query text (disease symptoms, fertilizer rules, policy, seed guidelines).
@@ -31,8 +40,18 @@ def rag_search_tool(query: str, top_k: int = 4) -> List[Dict[str, Any]]:
         List of matching document chunks with filename, category, page, and score.
     """
     try:
+        import time
         vector_store = get_cached_vector_store()
-        results = vector_store.similarity_search_with_score(query, k=top_k)
+
+        t0 = time.perf_counter()
+        query_embedding = vector_store.embedding_function.embed_query(query)
+        t_embed_ms = (time.perf_counter() - t0) * 1000
+
+        t1 = time.perf_counter()
+        results = vector_store.similarity_search_with_score_by_vector(query_embedding, k=top_k)
+        t_search_ms = (time.perf_counter() - t1) * 1000
+
+        print(f"[FAISS METRICS] Query: '{query[:40]}...' | Query Embedding: {t_embed_ms:.2f} ms | Vector Search: {t_search_ms:.2f} ms | Total RAG Search: {(t_embed_ms + t_search_ms):.2f} ms")
 
         chunks = []
         for doc, score in results:
@@ -85,7 +104,15 @@ def fertilizer_calculator_tool(season: str, district: str, field_size_acres: flo
     Returns:
         Recommended dosage breakdown in kg and application timetable.
     """
-    season_clean = season.strip().capitalize()
+    # Robust season normalization (handles "yala", "Yala (Dry)", "Maha Season", etc.)
+    season_lower = season.strip().lower()
+    if "yala" in season_lower:
+        season_clean = "Yala"
+    elif "maha" in season_lower:
+        season_clean = "Maha"
+    else:
+        # Default to Maha (wet season) if season is ambiguous
+        season_clean = "Maha"
 
     # Department of Agriculture standard base recommendations per acre
     if season_clean == "Yala":
