@@ -1,6 +1,7 @@
 """
 DiagnosticAgent Implementation
-Agentic Pattern 2: Tool-Use & ReAct Pattern using RAG + Groq Llama 3.3 70B / Google Gemini model.
+Agentic Pattern 2: Tool-Use & ReAct Pattern using RAG + Gemini 2.0 Flash / Groq Llama 3.3 70B model.
+Optimized for ultra-fast response with tightened prompts and minimal RAG context.
 """
 
 import json
@@ -8,45 +9,26 @@ from typing import List, Optional
 
 from core.agent_messages import AgentMessage, DiagnosticResult, RAGContextChunk
 from core.agents.base_agent import BaseAgent
-from config.model_provider import get_reasoning_model, detect_language_and_script
+from config.model_provider import get_reasoning_model
 from tools.tools import rag_search_tool
 
 
 class DiagnosticAgent(BaseAgent):
     """
     Specialized agent for paddy disease diagnosis using deep reasoning model + RAG search tool.
-    Dynamically routes to Gemini if Sinhala or Singlish language is detected.
     Supports Explicit Chain-of-Thought (CoT) and Self-Correction Loop.
     """
 
     def __init__(self):
-        # Default initialization with standard reasoning model
         super().__init__(name="DiagnosticAgent", model=get_reasoning_model())
 
     def process(self, message: AgentMessage, feedback: Optional[str] = None) -> DiagnosticResult:
         self._log_start(message)
         query = message.user_query
 
-        # Step 0: Language & script auto-detection for routing
-        is_sinhala_or_singlish = detect_language_and_script(query)
-        self.model = get_reasoning_model(is_sinhala_or_singlish=is_sinhala_or_singlish)
-
         # Step 1: High-Speed RAG Vector Search (FAISS Index)
-        from tools.tools import rag_search_tool
         print(f"[{self.name}] Executing RAG Vector Search...")
-        rag_results = rag_search_tool.invoke({"query": query, "top_k": 4})
-
-        # Step 2: Fallback to Web Search ONLY if RAG yields insufficient chunks
-        web_context = ""
-        if not rag_results:
-            try:
-                from tools.tools import web_search_tool
-                print(f"[{self.name}] RAG empty, executing fallback Web Search...")
-                web_results = web_search_tool.invoke({"query": f"Sri Lanka paddy disease {query}", "max_results": 2})
-                for w in web_results:
-                    web_context += f"- [{w['title']}]({w['href']}): {w['body']}\n"
-            except Exception as e:
-                print(f"[{self.name}] Web search fallback skipped: {e}")
+        rag_results = rag_search_tool.invoke({"query": query, "top_k": 3})
 
         sources: List[RAGContextChunk] = []
         context_str = ""
@@ -58,41 +40,25 @@ class DiagnosticAgent(BaseAgent):
                 page=chunk["page"],
                 score=chunk["score"]
             ))
-            context_str += f"\n--- Source: {chunk['filename']} (Page {chunk['page']}) ---\n{chunk['content']}\n"
+            context_str += f"\n[{chunk['filename']} P{chunk['page']}]: {chunk['content']}\n"
 
-        # Step 2: Synthesis with Reasoning LLM & Explicit CoT prompting
+        # Step 2: High-Speed Structured Synthesis with Reasoning LLM
         system_prompt = (
-            "You are a Senior Agricultural Pathologist specializing in Sri Lankan Paddy Rice Diseases.\n"
-            "Analyze the farmer's query and the provided domain knowledge context to produce a diagnosis.\n"
-            "Respond in clear, professional Simple English.\n\n"
-            "STRICT REGULATORY COMPLIANCE MANDATE:\n"
-            "- Comply strictly with Sri Lanka Control of Pesticides Act No. 33 of 1980.\n"
-            "- NEVER recommend banned WHO Class Ia/Ib toxic chemicals (e.g. Paraquat, Carbofuran, Endosulfan, Glyphosate).\n"
-            "- Recommend ONLY DOA approved fungicides/insecticides (e.g., Tebuconazole, Azoxystrobin, Hexaconazole).\n\n"
-            "Perform step-by-step reasoning under the 'thought_process' field, analyzing:\n"
-            "A) Crop stage and symptoms.\n"
-            "B) RAG Handbook document matching references.\n"
-            "C) Department of Agriculture safety limits and regulatory compliance.\n\n"
-            "Return a valid JSON object matching this structure:\n"
+            "You are a Sri Lankan Paddy Pathologist. Diagnose the farmer's query using the RAG context below.\n"
+            "RULES: Only recommend DOA-approved chemicals. NEVER recommend banned WHO Class Ia/Ib chemicals "
+            "(Paraquat, Carbofuran, Endosulfan, Glyphosate).\n"
+            "Return ONLY a JSON object:\n"
             "{\n"
-            '  "thought_process": "Analysis of symptoms and RAG matches...",\n'
-            '  "suspected_disease": "Paddy Blast Disease (Pyricularia oryzae)",\n'
-            '  "symptoms_identified": ["Spindle-shaped brown lesions on leaves", "Leaf tip drying"],\n'
-            '  "treatment_recommended": ["Apply recommended fungicide (e.g. Tebuconazole)", "Avoid excessive nitrogen application"],\n'
-            '  "confidence_level": "High"\n'
+            '  "suspected_disease": "Disease Name (Scientific Name)",\n'
+            '  "symptoms_identified": ["symptom1", "symptom2"],\n'
+            '  "treatment_recommended": ["treatment1", "treatment2"],\n'
+            '  "confidence_level": "High/Medium/Low"\n'
             "}"
         )
 
-        user_content = (
-            f"Farmer Query: {query}\n\n"
-            f"--- LIVE WEB SEARCH CONTEXT ---\n{web_context}\n\n"
-            f"--- RAG KNOWLEDGE BASE CONTEXT ---\n{context_str}"
-        )
+        user_content = f"Query: {query}\n\nRAG Context:\n{context_str}"
         if feedback:
-            user_content += (
-                f"\n\n⚠️ REFLECTION CRITIQUE & SELF-CORRECTION FEEDBACK:\n{feedback}\n"
-                f"Please review this critique, self-correct your previous analysis, and provide a rectified response."
-            )
+            user_content += f"\n\n⚠️ REFLECTION FEEDBACK:\n{feedback}\nSelf-correct your previous analysis."
 
         try:
             response = self.invoke_llm([
@@ -109,7 +75,7 @@ class DiagnosticAgent(BaseAgent):
 
             parsed = json.loads(raw_text)
             result = DiagnosticResult(
-                thought_process=parsed.get("thought_process", "CoT Completed"),
+                thought_process=parsed.get("thought_process", "Diagnosed via DOA RAG Knowledge Base"),
                 suspected_disease=parsed.get("suspected_disease", "Paddy Health Anomaly"),
                 symptoms_identified=parsed.get("symptoms_identified", []),
                 treatment_recommended=parsed.get("treatment_recommended", []),
@@ -117,21 +83,6 @@ class DiagnosticAgent(BaseAgent):
                 rag_sources=sources
             )
             
-            # Step 4: Auto-Learning (Second Brain) for Highly Confident Answers
-            if result.confidence_level.upper() == "HIGH":
-                from rag.rag_pipeline import auto_learn_text
-                import uuid
-                learned_content = (
-                    f"Query: {query}\n"
-                    f"Verified Disease: {result.suspected_disease}\n"
-                    f"Symptoms: {', '.join(result.symptoms_identified)}\n"
-                    f"Treatments: {', '.join(result.treatment_recommended)}"
-                )
-                try:
-                    auto_learn_text(learned_content, f"learned_{uuid.uuid4().hex[:6]}")
-                except Exception as e:
-                    print(f"[{self.name}] Failed to auto-learn: {e}")
-
             self._log_success(message.message_id)
             return result
         except Exception as e:

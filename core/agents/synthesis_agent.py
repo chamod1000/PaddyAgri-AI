@@ -8,7 +8,7 @@ into a single, coherent, highly accurate final answer.
 from typing import Optional
 from core.agent_messages import DiagnosticResult, FertilizerRecommendation, ReflectionResult
 from core.agents.base_agent import BaseAgent
-from config.model_provider import get_reasoning_model, detect_language_and_script
+from config.model_provider import get_reasoning_model
 
 class SynthesisAgent(BaseAgent):
     """
@@ -18,7 +18,7 @@ class SynthesisAgent(BaseAgent):
     """
 
     def __init__(self):
-        super().__init__(name="SynthesisAgent", model=get_reasoning_model())
+        super().__init__(name="SynthesisAgent", model=None)
 
     def synthesize(
         self,
@@ -41,7 +41,11 @@ class SynthesisAgent(BaseAgent):
     ):
         """Zero-latency Local Streamer: Streams structured findings directly in zero milliseconds."""
         if general_info:
-            yield general_info
+            if isinstance(general_info, str):
+                yield general_info
+            else:
+                # It's a live streaming generator
+                yield from general_info
             return
 
         out_parts = []

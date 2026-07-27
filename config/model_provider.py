@@ -14,13 +14,6 @@ from langchain_core.language_models import BaseChatModel
 load_dotenv()
 
 
-def detect_language_and_script(query_text: str) -> bool:
-    """
-    Returns False to enforce English-only high speed execution mode.
-    """
-    return False
-
-
 def get_gemini_model(model_name: str = "gemini-2.0-flash", temperature: float = 0.0) -> Optional[BaseChatModel]:
     """
     Instantiates Google Gemini LLM via langchain-google-genai.
@@ -35,7 +28,8 @@ def get_gemini_model(model_name: str = "gemini-2.0-flash", temperature: float = 
                     llm = ChatGoogleGenerativeAI(
                         model=m,
                         google_api_key=gemini_api_key.strip(),
-                        temperature=temperature
+                        temperature=temperature,
+                        max_output_tokens=1024
                     )
                     return llm
                 except Exception:
@@ -128,12 +122,13 @@ def get_router_model() -> BaseChatModel:
 
 
 @functools.lru_cache(maxsize=4)
-def get_reasoning_model(model_override: Optional[str] = None, is_sinhala_or_singlish: bool = False) -> BaseChatModel:
+def get_reasoning_model(model_override: Optional[str] = None) -> BaseChatModel:
     """
     Returns a high reasoning quality model for Paddy Disease Diagnosis & Fertilizer Synthesis.
-    Cascades dynamically across Multi-Tiered Pro & Free models:
-    Tier 1 (Pro): Claude 3.5 Sonnet -> GPT-4o -> Gemini 1.5 Pro -> Groq Llama 70B
-    Tier 2 (Free/Fast Fallbacks): Gemini 2.0 Flash -> OpenRouter Free 8B -> Groq 8B Instant -> Cohere
+    Speed-optimized cascade (fastest first):
+    Tier 1 (Ultra-Fast): Gemini 2.0 Flash (~1-2s) -> Groq Llama 70B (~1-3s)
+    Tier 2 (High Quality): Gemini 1.5 Pro -> OpenRouter Claude/GPT-4o
+    Tier 3 (Fallbacks): Groq 8B Instant -> Cohere
     """
     groq_api_key = os.getenv("GROQ_API_KEY")
     gemini_api_key = os.getenv("GEMINI_API_KEY")
@@ -143,63 +138,51 @@ def get_reasoning_model(model_override: Optional[str] = None, is_sinhala_or_sing
     T = 0.0
     models = []
 
-    if openrouter_api_key:
-        from langchain_openai import ChatOpenAI
-        target_model = model_override or "anthropic/claude-3.5-sonnet"
-        # 1. Primary OpenRouter Pro Model (Claude 3.5 Sonnet)
-        models.append(ChatOpenAI(
-            model_name=target_model,
-            openai_api_key=openrouter_api_key,
-            openai_api_base="https://openrouter.ai/api/v1",
-            temperature=T,
-            max_tokens=600,
-            max_retries=1
-        ))
-        # 2. Secondary OpenRouter Pro Model (GPT-4o)
-        models.append(ChatOpenAI(
-            model_name="openai/gpt-4o",
-            openai_api_key=openrouter_api_key,
-            openai_api_base="https://openrouter.ai/api/v1",
-            temperature=T,
-            max_tokens=600,
-            max_retries=1
-        ))
-
-    # 3. Gemini Pro Tier
+    # 1. PRIMARY: Gemini 2.0 Flash (Ultra-Fast, Free, High Quality)
     if gemini_api_key and not _GEMINI_QUOTA_EXHAUSTED:
-        gemini_pro = get_gemini_model(model_name="gemini-1.5-pro", temperature=T)
-        if gemini_pro:
-            models.append(gemini_pro)
+        gemini_flash = get_gemini_model(model_name="gemini-2.0-flash", temperature=T)
+        if gemini_flash:
+            models.append(gemini_flash)
 
-    # 4. Groq 70B Pro Tier
+    # 2. Groq Llama 3.3 70B (Ultra-Fast via Groq hardware)
     if groq_api_key:
         from langchain_groq import ChatGroq
         models.append(ChatGroq(
             model_name="llama-3.3-70b-versatile",
             groq_api_key=groq_api_key,
             temperature=T,
-            max_tokens=600,
+            max_tokens=250,
             max_retries=1
         ))
 
-    # 5. Gemini Flash Tier (Fallback)
+    # 3. Gemini 1.5 Pro (High Quality Fallback)
     if gemini_api_key and not _GEMINI_QUOTA_EXHAUSTED:
-        gemini_flash = get_gemini_model(model_name="gemini-2.0-flash", temperature=T)
-        if gemini_flash:
-            models.append(gemini_flash)
+        gemini_pro = get_gemini_model(model_name="gemini-1.5-pro", temperature=T)
+        if gemini_pro:
+            models.append(gemini_pro)
 
-    # 6. OpenRouter Free Tier (Fallback)
+    # 4. OpenRouter Pro Models (Last Resort - slowest)
     if openrouter_api_key:
         from langchain_openai import ChatOpenAI
+        target_model = model_override or "anthropic/claude-3.5-sonnet"
         models.append(ChatOpenAI(
-            model_name="meta-llama/llama-3.1-8b-instruct:free",
+            model_name=target_model,
             openai_api_key=openrouter_api_key,
             openai_api_base="https://openrouter.ai/api/v1",
             temperature=T,
+            max_tokens=400,
+            max_retries=1
+        ))
+        models.append(ChatOpenAI(
+            model_name="openai/gpt-4o",
+            openai_api_key=openrouter_api_key,
+            openai_api_base="https://openrouter.ai/api/v1",
+            temperature=T,
+            max_tokens=400,
             max_retries=1
         ))
 
-    # 7. Groq 8B Instant (Fallback)
+    # 5. Groq 8B Instant (Ultra-Fast Lightweight Fallback)
     if groq_api_key:
         from langchain_groq import ChatGroq
         models.append(ChatGroq(
@@ -209,13 +192,13 @@ def get_reasoning_model(model_override: Optional[str] = None, is_sinhala_or_sing
             max_retries=1
         ))
 
-    # 8. Cohere Enterprise Tier
+    # 6. Cohere Enterprise Tier
     cohere_llm = get_cohere_model(temperature=T)
     if cohere_llm:
         models.append(cohere_llm)
 
     if not models:
-        raise ValueError("API Key missing! Please set OPENROUTER_API_KEY, GEMINI_API_KEY, GROQ_API_KEY, or COHERE_API_KEY.")
+        raise ValueError("API Key missing! Please set GEMINI_API_KEY, GROQ_API_KEY, OPENROUTER_API_KEY, or COHERE_API_KEY.")
 
     primary_model = models[0]
     if len(models) > 1:

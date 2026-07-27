@@ -38,10 +38,34 @@ class BaseAgent(ABC):
     def invoke_llm(self, messages: list) -> Any:
         """Common LLM invocation relying on LangChain's native with_fallbacks cascading."""
         try:
-            start_time = time.time()
+            t0 = time.perf_counter()
             response = self.model.invoke(messages)
-            duration = time.time() - start_time
-            print(f"[{self.name}] LLM response received in {duration:.2f}s")
+            elapsed_ms = (time.perf_counter() - t0) * 1000
+
+            # Extract provider / model name
+            model_info = "Unknown Model"
+            if hasattr(response, "response_metadata") and isinstance(response.response_metadata, dict):
+                model_info = (
+                    response.response_metadata.get("model_name") or
+                    response.response_metadata.get("model") or
+                    str(response.response_metadata)
+                )
+            elif hasattr(self.model, "model_name"):
+                model_info = getattr(self.model, "model_name")
+
+            # Extract output token count
+            output_tokens = 0
+            if hasattr(response, "usage_metadata") and isinstance(response.usage_metadata, dict):
+                output_tokens = response.usage_metadata.get("output_tokens", 0)
+            elif hasattr(response, "response_metadata") and isinstance(response.response_metadata, dict):
+                token_usage = response.response_metadata.get("token_usage", {}) or response.response_metadata.get("usage", {})
+                if isinstance(token_usage, dict):
+                    output_tokens = token_usage.get("completion_tokens") or token_usage.get("output_tokens") or 0
+
+            if not output_tokens and hasattr(response, "content"):
+                output_tokens = len(str(response.content).split())
+
+            print(f"[{self.name}] LLM Call: {elapsed_ms:.2f} ms | Model/Provider: {model_info} | Output Tokens: {output_tokens}")
             return response
         except Exception as e:
             self._log_error(e, "All fallback models failed during LLM invocation")

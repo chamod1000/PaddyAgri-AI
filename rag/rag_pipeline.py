@@ -5,8 +5,8 @@ Step 2: RAG Pipeline Implementation for Sri Lankan Paddy Farming Data
 This script:
 1. Recursively loads PDF documents from Data/PDF/ directory subfolders.
 2. Applies RecursiveCharacterTextSplitter for document chunking.
-3. Uses a multilingual HuggingFace embedding model (paraphrase-multilingual-MiniLM-L12-v2)
-   to support both English and Sinhala text embeddings.
+3. Uses a HuggingFace embedding model (paraphrase-multilingual-MiniLM-L12-v2)
+   to support text embeddings.
 4. Stores chunks into a persistent vector store (FAISS / Chroma).
 5. Provides an evaluation function running 5 sample agricultural queries.
 """
@@ -26,7 +26,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = BASE_DIR / "Data" / "PDF"
 FAISS_INDEX_DIR = BASE_DIR / "faiss_db"
 
-# Multilingual embedding model supporting Sinhala & English
+# Embedding model
 EMBEDDING_MODEL_NAME = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 
 
@@ -122,6 +122,9 @@ def chunk_documents(
 _CACHED_EMBEDDINGS = None
 _CACHED_VECTOR_STORE = None
 
+import threading
+_VECTOR_STORE_WRITE_LOCK = threading.Lock()
+
 
 def get_embeddings_model() -> HuggingFaceEmbeddings:
     """
@@ -200,20 +203,21 @@ def auto_learn_text(text: str, source_id: str):
     with open(file_path, "w", encoding="utf-8") as f:
         f.write(text)
     
-    # 2. Inject into live vector store
-    vector_store = create_or_load_vector_store()
-    
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=1000,
-        chunk_overlap=200,
-        separators=["\n\n", "\n", ". ", " ", ""]
-    )
-    chunks = text_splitter.split_text(text)
-    
-    metadatas = [{"category": "Self-Learned", "filename": f"{source_id}.txt", "source": "Auto-Generated"} for _ in chunks]
-    
-    vector_store.add_texts(texts=chunks, metadatas=metadatas)
-    vector_store.save_local(str(FAISS_INDEX_DIR))
+    # 2. Inject into live vector store (thread-safe)
+    with _VECTOR_STORE_WRITE_LOCK:
+        vector_store = create_or_load_vector_store()
+        
+        text_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=1000,
+            chunk_overlap=200,
+            separators=["\n\n", "\n", ". ", " ", ""]
+        )
+        chunks = text_splitter.split_text(text)
+        
+        metadatas = [{"category": "Self-Learned", "filename": f"{source_id}.txt", "source": "Auto-Generated"} for _ in chunks]
+        
+        vector_store.add_texts(texts=chunks, metadatas=metadatas)
+        vector_store.save_local(str(FAISS_INDEX_DIR))
     print(f"[SUCCESS] Learned new information and injected into FAISS: {source_id}")
 
 
@@ -225,8 +229,8 @@ def evaluate_retrieval(vector_store: FAISS, sample_queries: Optional[List[str]] 
         sample_queries = [
             "What are the common symptoms and control measures for Paddy Blast disease?",
             "What is the recommended NPK fertilizer application rate for Yala season paddy cultivation?",
-            "ගොයම් පාළු රෝගය පාලනය කරන්නේ කෙසේද?",
-            "What are the quality standards and germination requirements for certified seed paddy in Sri Lanka?",
+            "Identify symptoms of brown planthopper damage in paddy.",
+            "Seed purity regulations for Certified Seed Paddy in Sri Lanka.",
             "What are the quarantine regulations for importing paddy seed and agricultural items into Sri Lanka?"
         ]
 
