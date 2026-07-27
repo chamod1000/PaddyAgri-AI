@@ -13,6 +13,16 @@ from langchain_core.language_models import BaseChatModel
 
 load_dotenv()
 
+# Streamlit Community Cloud secrets mapping bridge
+try:
+    import streamlit as st
+    if hasattr(st, "secrets"):
+        for k, v in st.secrets.items():
+            if isinstance(v, str) and not os.getenv(k):
+                os.environ[k] = str(v)
+except Exception:
+    pass
+
 
 def get_gemini_model(model_name: str = "gemini-2.0-flash", temperature: float = 0.0) -> Optional[BaseChatModel]:
     """
