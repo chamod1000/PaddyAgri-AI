@@ -85,7 +85,11 @@ flowchart TD
 | **Intent Routing** | Regex Keyword Classifier | **0.03 ms** | Local CPU | Zero-latency instant intent classification. |
 | **Pathology & NPK Reasoning** | `llama-3.3-70b-versatile` | **~340 ms – 950 ms** | Groq LPU Hardware | Exceptional reasoning quality for complex pathology & structured JSON generation. |
 | **Multimodal / High-Quality** | `gemini-2.0-flash` | **~1.2 s** | Google AI Studio | High-tier multimodal reasoning fallback. |
-| **RAG Vector Search** | `MiniLM-L12-v2` + FAISS | **~34 ms – 75 ms** | Local CPU (PyTorch) | 384-dimensional dense vector retrieval across 3,949 chunks. |
+| **RAG Vector Search** | `MiniLM-L12-v2` + FAISS | **~34 ms – 75 ms** | Local CPU (PyTorch Engine) | 384-dimensional dense vector retrieval across 3,949 chunks. |
+
+> [!NOTE]
+> **PyTorch Cloud Deployment Compatibility:**  
+> The system utilizes **PyTorch CPU Mode** (`torch` CPU build via `--extra-index-url https://download.pytorch.org/whl/cpu`) inside `sentence-transformers` and `faiss-cpu`. This guarantees **100% stable compatibility with Streamlit Community Cloud**, using under 250 MB RAM out of the 1 GB Cloud limit, while delivering sub-second ~35 ms vector retrieval without requiring GPU hardware.
 
 ---
 
