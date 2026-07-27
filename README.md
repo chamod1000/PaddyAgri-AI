@@ -1,4 +1,4 @@
-# 🌾 PaddyAgri AI (`paddy-agri-ai`)
+# 🌾 PaddyAgri AI (`PaddyAgri-AI`)
 ### Multi-Agent Paddy Disease Diagnostic & Fertilizer Advisory System for Sri Lanka
 
 [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://paddyagriai.streamlit.app/)  
@@ -6,7 +6,7 @@
 
 **Module:** IT41043 - Agentic AI (Horizon Campus)  
 **Author:** Chamod  
-**Repository:** `PaddyAgri-AI` | **Branches:** `main` | `master` | `feature/streamlit-ui`
+**Repository:** [`chamod1000/PaddyAgri-AI`](https://github.com/chamod1000/PaddyAgri-AI) | **Branches:** `main` | `master` | `feature/streamlit-ui` | `feature/agent-orchestration` | `feature/rag-pipeline`
 
 ---
 
