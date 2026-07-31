@@ -198,6 +198,9 @@ class ConversationExperienceEngine:
         opening_hint = random.choice(cls._OPENING_STYLE_HINTS)
         prompt = cls._build_prompt(user_query, intent, evidence, conv_context, opening_hint, draft_content=final_synthesis)
 
+        if prompt is None:
+            raise RuntimeError(f"[CONVERSATION ENGINE] _build_prompt returned None for query: {user_query}")
+
         text = None
         try:
             model = get_reasoning_model()
@@ -255,8 +258,8 @@ class ConversationExperienceEngine:
         if final_lines:
             return "\n".join(final_lines).strip()
             
-        # Absolute fallback: just return the raw text (scrubber will clean it)
-        return raw_text.strip()
+        # Absolute fallback: if we couldn't find the final_response, return None to trigger the deterministic fallback
+        return None
 
     # ──────────────────────────────────────────────────────────────────────
     # Conversation Continuity Engine (v6.0)
@@ -412,6 +415,44 @@ class ConversationExperienceEngine:
             draft_section = f"\nHERE IS A DRAFT RESPONSE BASED ON THE EVIDENCE:\n<draft>\n{draft_content}\n</draft>\n\nNOW, REVIEW THIS DRAFT AND PROVIDE:\n1. A <review> block that critiques the draft on:\n    - Naturalness\n    - Readability\n    - Grounding (DOA Evidence)\n    - Practical usefulness\n    - Professional expert tone (No customer support filler)\n2. A <final_response> block that improves the draft based on your review.\n\nIf the draft is empty, first generate a draft based on the instructions and evidence, then review and finalize."
         else:
             draft_section = "To guarantee production-level quality, you MUST output your response in three XML blocks exactly as follows:\n\n<draft>\nWrite your initial full response here based on the instructions above.\n</draft>\n\n<review>\nScore the draft out of 10 for:\n1. Naturalness\n2. Readability\n3. Grounding (DOA Evidence)\n4. Practical usefulness\n5. Professional expert tone (No customer support filler)\nIdentify any robotic phrasing, dense walls of text, or forbidden openers.\n</review>\n\n<final_response>\nWrite the final polished response, fixing every flaw identified in the review.\nEnsure chemical and organic treatments remain strictly separated.\n</final_response>"
+
+        return f"""You are PaddyAgri AI — a Principal Agricultural Extension Officer in Sri Lanka.
+You have decades of field experience advising paddy farmers.
+
+{conv_section}
+CURRENT FARMER'S QUESTION: "{user_query}"
+
+VERIFIED DOA EVIDENCE (Every factual claim must be grounded here):
+{evidence}
+
+══════════════════════════════════════════════════════════════
+INTENT: {intent.upper()}
+{guidance}
+══════════════════════════════════════════════════════════════
+
+VOICE & TONE
+- Expert speaking to another human — calm, direct, confident.
+- NOT customer support. No artificial empathy. No scripted warmth.
+
+FIRST SENTENCE RULE
+- Opening style this turn: {opening_hint}
+- NEVER begin with: Ayubowan, Hello, I'm glad you asked, Don't worry, Thank you.
+- The first sentence must directly address the question.
+
+CHEMICAL vs ORGANIC
+- ALWAYS write chemical treatment first.
+- ALWAYS write organic/cultural management as a distinct block.
+- NEVER mix them in the same paragraph.
+
+ENDING
+- Finish with one natural, practical sentence. Never end with "Hope this helps" or "Thank you".
+
+══════════════════════════════════════════════════════════════
+CHAIN OF THOUGHT: SELF-REVIEW & QUALITY GATE
+══════════════════════════════════════════════════════════════
+{draft_section}
+
+Begin now."""
 
     # ──────────────────────────────────────────────────────────────────────
     # Heuristic Polish Layer (v6.0)
