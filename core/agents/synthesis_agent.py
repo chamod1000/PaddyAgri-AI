@@ -5,7 +5,7 @@ Combines outputs from multiple specialized agents (Diagnostic, Fertilizer, Gener
 into a single, coherent, highly accurate final answer.
 """
 
-from typing import Optional
+from typing import Optional, Any, List, Dict
 from core.agent_messages import DiagnosticResult, FertilizerRecommendation, ReflectionResult
 from core.agents.base_agent import BaseAgent
 from config.model_provider import get_reasoning_model
@@ -23,58 +23,49 @@ class SynthesisAgent(BaseAgent):
     def synthesize(
         self,
         user_query: str,
-        diagnostic_info: Optional[DiagnosticResult] = None,
-        fertilizer_info: Optional[FertilizerRecommendation] = None,
-        general_info: Optional[str] = None,
-        reflection_result: Optional[ReflectionResult] = None
+        diagnostic_info: Optional[Any] = None,
+        fertilizer_info: Optional[Any] = None,
+        general_info: Optional[Any] = None,
+        reflection_result: Optional[Any] = None,
+        conversation_history: Optional[List[Dict[str, str]]] = None
     ) -> str:
         """Zero-latency Local Synthesizer: formats agent results directly into markdown in 0ms."""
-        return "".join(list(self.synthesize_stream(user_query, diagnostic_info, fertilizer_info, general_info, reflection_result)))
+        return "".join(list(self.synthesize_stream(
+            user_query,
+            diagnostic_info,
+            fertilizer_info,
+            general_info,
+            reflection_result,
+            conversation_history=conversation_history
+        )))
 
     def synthesize_stream(
         self,
         user_query: str,
-        diagnostic_info: Optional[DiagnosticResult] = None,
-        fertilizer_info: Optional[FertilizerRecommendation] = None,
-        general_info: Optional[str] = None,
-        reflection_result: Optional[ReflectionResult] = None
+        diagnostic_info: Optional[Any] = None,
+        fertilizer_info: Optional[Any] = None,
+        general_info: Optional[Any] = None,
+        reflection_result: Optional[Any] = None,
+        weather_info: Optional[Any] = None,
+        final_synthesis: Optional[str] = None,
+        conversation_history: Optional[List[Dict[str, str]]] = None
     ):
-        """Zero-latency Local Streamer: Streams structured findings directly in zero milliseconds."""
-        if general_info:
-            if isinstance(general_info, str):
-                yield general_info
-            else:
-                # It's a live streaming generator
-                yield from general_info
-            return
+        """Zero-latency Conversational Streamer: Uses ConversationExperienceEngine for organic ChatGPT/Claude AI dialogue."""
+        from core.synthesis.conversation_experience_engine import ConversationExperienceEngine
 
-        out_parts = []
-        if diagnostic_info:
-            out_parts.append(f"### 🔬 Disease Diagnosis Report\n")
-            out_parts.append(f"**Suspected Disease:** {diagnostic_info.suspected_disease}\n")
-            out_parts.append(f"**Confidence Level:** `{diagnostic_info.confidence_level}`\n\n")
-            out_parts.append(f"#### 🔍 Key Symptoms Identified:\n")
-            for s in diagnostic_info.symptoms_identified:
-                out_parts.append(f"- {s}\n")
-            out_parts.append(f"\n#### 🛡️ Recommended DOA Treatments:\n")
-            for t in diagnostic_info.treatment_recommended:
-                out_parts.append(f"- {t}\n")
-            out_parts.append("\n---\n")
+        conversational_text = ConversationExperienceEngine.compose_conversation(
+            user_query=user_query,
+            diagnostic_info=diagnostic_info,
+            fertilizer_info=fertilizer_info,
+            weather_info=weather_info,
+            general_info=general_info,
+            reflection_result=reflection_result,
+            final_synthesis=final_synthesis,
+            conversation_history=conversation_history,
+        )
 
-        if fertilizer_info:
-            out_parts.append(f"### 🌾 NPK Fertilizer Schedule ({fertilizer_info.season} Season)\n")
-            out_parts.append(f"- **Urea Dosage:** `{fertilizer_info.urea_dosage_per_acre_kg} kg / acre`\n")
-            out_parts.append(f"- **TSP Dosage:** `{fertilizer_info.tsp_dosage_per_acre_kg} kg / acre`\n")
-            out_parts.append(f"- **MOP Dosage:** `{fertilizer_info.mop_dosage_per_acre_kg} kg / acre`\n\n")
-            out_parts.append(f"#### 📅 Application Timeline:\n")
-            for app in fertilizer_info.application_schedule:
-                out_parts.append(f"- {app}\n")
-
-        final_text = "".join(out_parts)
-        if final_text.strip():
-            yield final_text
-        else:
-            yield "No specific agricultural advisory data was returned for this query."
+        if conversational_text.strip():
+            yield conversational_text
 
     def process(self, message: any) -> any:
         """Required by BaseAgent, but unused in SynthesisAgent which uses synthesize() directly."""

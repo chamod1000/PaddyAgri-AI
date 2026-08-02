@@ -39,7 +39,13 @@ class FertilizerAgent(BaseAgent):
         })
 
         # Step 2: Tool-Use - RAG search for specific soil/fertilizer guidelines
-        rag_results = rag_search_tool.invoke({"query": query, "top_k": 3})
+        shared_chunks = message.payload.get("shared_rag_chunks") if message.payload else None
+        if shared_chunks is not None:
+            print(f"[{self.name}] Using Shared RAG Context from Orchestrator Payload...")
+            rag_results = shared_chunks
+        else:
+            print(f"[{self.name}] Executing RAG Vector Search...")
+            rag_results = rag_search_tool.invoke({"query": query, "top_k": 3})
         sources: List[RAGContextChunk] = []
         context_str = ""
         for chunk in rag_results:

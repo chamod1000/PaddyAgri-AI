@@ -24,11 +24,20 @@ class DiagnosticAgent(BaseAgent):
 
     def process(self, message: AgentMessage, feedback: Optional[str] = None) -> DiagnosticResult:
         self._log_start(message)
-        query = message.user_query
+        # Extract structured ProcessingContext
+        ctx = message.context
+        query = ctx.user_query if (ctx and ctx.user_query) else message.user_query
+        vision_res = ctx.vision_analysis if ctx else (message.payload.get("vision_result") if message.payload else None)
 
         # Step 1: High-Speed RAG Vector Search (FAISS Index)
-        print(f"[{self.name}] Executing RAG Vector Search...")
-        rag_results = rag_search_tool.invoke({"query": query, "top_k": 3})
+        shared_chunks = message.payload.get("shared_rag_chunks") if message.payload else None
+        if shared_chunks is not None:
+            print(f"[{self.name}] Using Shared RAG Context from Orchestrator Payload...")
+            rag_results = shared_chunks
+        else:
+            print(f"[{self.name}] Executing RAG Vector Search...")
+            search_term = query if query else "paddy disease leaf symptoms"
+            rag_results = rag_search_tool.invoke({"query": search_term, "top_k": 3})
 
         sources: List[RAGContextChunk] = []
         context_str = ""
@@ -42,9 +51,8 @@ class DiagnosticAgent(BaseAgent):
             ))
             context_str += f"\n[{chunk['filename']} P{chunk['page']}]: {chunk['content']}\n"
 
-        # Step 2: High-Speed Structured Synthesis with Reasoning LLM
         system_prompt = (
-            "You are a Sri Lankan Paddy Pathologist. Diagnose the farmer's query using the RAG context below.\n"
+            "You are a Sri Lankan Paddy Pathologist. Diagnose the farmer's query using the isolated input modalities below.\n"
             "RULES: Only recommend DOA-approved chemicals. NEVER recommend banned WHO Class Ia/Ib chemicals "
             "(Paraquat, Carbofuran, Endosulfan, Glyphosate).\n"
             "Return ONLY a JSON object:\n"
@@ -56,7 +64,27 @@ class DiagnosticAgent(BaseAgent):
             "}"
         )
 
-        user_content = f"Query: {query}\n\nRAG Context:\n{context_str}"
+        sections = [f"User Query Modality: {query}"]
+        if vision_res:
+            symptoms = getattr(vision_res, "visible_symptoms", [])
+            obs = getattr(vision_res, "raw_observations", "")
+            sections.append(f"📷 Visual Observation Modality:\n- Symptoms: {', '.join(symptoms)}\n- Findings: {obs}")
+        
+        mem = getattr(ctx, "conversation_memory", None) if ctx else None
+        if mem and hasattr(mem, "case_memory") and mem.case_memory.previous_diagnoses:
+            past_diag = ", ".join(mem.case_memory.previous_diagnoses)
+            past_recs = "; ".join(mem.case_memory.recommendations_given)
+            sections.append(
+                f"🧠 Historical Case Memory Modality:\n"
+                f"- Previous Diagnoses in Case: {past_diag}\n"
+                f"- Cumulative Images Inspected: {mem.case_memory.uploaded_images_count}\n"
+                f"- Historical Recommendations: {past_recs if past_recs else 'None'}"
+            )
+
+        sections.append(f"📚 RAG Knowledge Base Modality:\n{context_str}")
+
+        user_content = "\n\n".join(sections)
+
         if feedback:
             user_content += f"\n\n⚠️ REFLECTION FEEDBACK:\n{feedback}\nSelf-correct your previous analysis."
 
@@ -67,7 +95,6 @@ class DiagnosticAgent(BaseAgent):
             ])
             raw_text = response.content.strip()
 
-            # Clean JSON formatting if wrapped in markdown blocks
             if raw_text.startswith("```json"):
                 raw_text = raw_text[7:-3].strip()
             elif raw_text.startswith("```"):
