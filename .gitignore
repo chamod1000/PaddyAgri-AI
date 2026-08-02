@@ -2,7 +2,6 @@
 __pycache__/
 venv/
 .streamlit/
-faiss_db/
 chroma_db/
 .DS_Store
 .claude/
