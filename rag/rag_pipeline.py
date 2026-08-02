@@ -128,18 +128,25 @@ _VECTOR_STORE_WRITE_LOCK = threading.Lock()
 
 def get_embeddings_model() -> HuggingFaceEmbeddings:
     """
-    Initializes multilingual HuggingFace embedding model with singleton caching.
+    Initializes multilingual HuggingFace embedding model with singleton caching and offline local-first fallback.
     """
     global _CACHED_EMBEDDINGS
     if _CACHED_EMBEDDINGS is not None:
         return _CACHED_EMBEDDINGS
 
     print(f"[INFO] Loading multilingual embedding model: {EMBEDDING_MODEL_NAME}...")
-    _CACHED_EMBEDDINGS = HuggingFaceEmbeddings(
-        model_name=EMBEDDING_MODEL_NAME,
-        model_kwargs={'device': 'cpu'},
-        encode_kwargs={'normalize_embeddings': True}
-    )
+    try:
+        _CACHED_EMBEDDINGS = HuggingFaceEmbeddings(
+            model_name=EMBEDDING_MODEL_NAME,
+            model_kwargs={'device': 'cpu', 'local_files_only': True},
+            encode_kwargs={'normalize_embeddings': True}
+        )
+    except Exception:
+        _CACHED_EMBEDDINGS = HuggingFaceEmbeddings(
+            model_name=EMBEDDING_MODEL_NAME,
+            model_kwargs={'device': 'cpu'},
+            encode_kwargs={'normalize_embeddings': True}
+        )
     return _CACHED_EMBEDDINGS
 
 
