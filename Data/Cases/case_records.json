@@ -1,0 +1,451 @@
+{
+  "case_integration_test_sess": {
+    "case_id": "case_integration_test_sess",
+    "session_id": "integration_test_sess",
+    "created_at": "2026-07-29T17:30:04.873072",
+    "updated_at": "2026-07-29T22:10:10.153284",
+    "disease": "Paddy Blast Disease (Pyricularia oryzae)",
+    "confidence": "Medium",
+    "fertilizer_plan": "Urea 50.0kg, TSP 30.0kg, MOP 30.0kg",
+    "safety_status": "COMPLIANT",
+    "quality_score": 1.0,
+    "image_count": 1,
+    "snapshots": [
+      {
+        "timestamp": "2026-07-29T17:30:04.873072",
+        "diagnosis": "Paddy Blast Disease (Pyricularia oryzae)",
+        "confidence": "Medium",
+        "summary": "Diagnosed Paddy Blast Disease (Pyricularia oryzae) with Medium confidence."
+      },
+      {
+        "timestamp": "2026-07-29T17:31:09.481760",
+        "diagnosis": "Paddy Blast Disease (Pyricularia oryzae)",
+        "confidence": "Medium",
+        "summary": "Diagnosed Paddy Blast Disease (Pyricularia oryzae) with Medium confidence."
+      },
+      {
+        "timestamp": "2026-07-29T17:32:20.384124",
+        "diagnosis": "Paddy Blast Disease (Pyricularia oryzae)",
+        "confidence": "Medium",
+        "summary": "Diagnosed Paddy Blast Disease (Pyricularia oryzae) with Medium confidence."
+      },
+      {
+        "timestamp": "2026-07-29T17:34:58.941560",
+        "diagnosis": "Paddy Blast Disease (Pyricularia oryzae)",
+        "confidence": "Medium",
+        "summary": "Diagnosed Paddy Blast Disease (Pyricularia oryzae) with Medium confidence."
+      },
+      {
+        "timestamp": "2026-07-29T17:37:47.867247",
+        "diagnosis": "Paddy Blast Disease (Pyricularia oryzae)",
+        "confidence": "Medium",
+        "summary": "Diagnosed Paddy Blast Disease (Pyricularia oryzae) with Medium confidence."
+      },
+      {
+        "timestamp": "2026-07-29T17:45:41.701137",
+        "diagnosis": "Paddy Blast Disease (Pyricularia oryzae)",
+        "confidence": "Medium",
+        "summary": "Diagnosed Paddy Blast Disease (Pyricularia oryzae) with Medium confidence."
+      },
+      {
+        "timestamp": "2026-07-29T17:47:44.659421",
+        "diagnosis": "Paddy Blast Disease (Pyricularia oryzae)",
+        "confidence": "Medium",
+        "summary": "Diagnosed Paddy Blast Disease (Pyricularia oryzae) with Medium confidence."
+      },
+      {
+        "timestamp": "2026-07-29T17:51:38.690721",
+        "diagnosis": "Paddy Blast Disease (Pyricularia oryzae)",
+        "confidence": "Medium",
+        "summary": "Diagnosed Paddy Blast Disease (Pyricularia oryzae) with Medium confidence."
+      },
+      {
+        "timestamp": "2026-07-29T17:59:10.880635",
+        "diagnosis": "Paddy Blast Disease (Pyricularia oryzae)",
+        "confidence": "Medium",
+        "summary": "Diagnosed Paddy Blast Disease (Pyricularia oryzae) with Medium confidence."
+      },
+      {
+        "timestamp": "2026-07-29T18:20:40.540312",
+        "diagnosis": "Paddy Blast Disease (Pyricularia oryzae)",
+        "confidence": "Medium",
+        "summary": "Diagnosed Paddy Blast Disease (Pyricularia oryzae) with Medium confidence."
+      },
+      {
+        "timestamp": "2026-07-29T20:37:55.038343",
+        "diagnosis": "Paddy Blast Disease (Pyricularia oryzae)",
+        "confidence": "Medium",
+        "summary": "Diagnosed Paddy Blast Disease (Pyricularia oryzae) with Medium confidence."
+      },
+      {
+        "timestamp": "2026-07-29T20:43:14.639003",
+        "diagnosis": "Paddy Blast Disease (Pyricularia oryzae)",
+        "confidence": "Medium",
+        "summary": "Diagnosed Paddy Blast Disease (Pyricularia oryzae) with Medium confidence."
+      },
+      {
+        "timestamp": "2026-07-29T20:47:03.547660",
+        "diagnosis": "Paddy Blast Disease (Pyricularia oryzae)",
+        "confidence": "Medium",
+        "summary": "Diagnosed Paddy Blast Disease (Pyricularia oryzae) with Medium confidence."
+      },
+      {
+        "timestamp": "2026-07-29T20:59:01.190876",
+        "diagnosis": "Paddy Blast Disease (Pyricularia oryzae)",
+        "confidence": "Medium",
+        "summary": "Diagnosed Paddy Blast Disease (Pyricularia oryzae) with Medium confidence."
+      },
+      {
+        "timestamp": "2026-07-29T21:08:46.794118",
+        "diagnosis": "Paddy Blast Disease (Pyricularia oryzae)",
+        "confidence": "Medium",
+        "summary": "Diagnosed Paddy Blast Disease (Pyricularia oryzae) with Medium confidence."
+      },
+      {
+        "timestamp": "2026-07-29T21:11:43.976987",
+        "diagnosis": "Paddy Blast Disease (Pyricularia oryzae)",
+        "confidence": "Medium",
+        "summary": "Diagnosed Paddy Blast Disease (Pyricularia oryzae) with Medium confidence."
+      },
+      {
+        "timestamp": "2026-07-29T21:33:35.612815",
+        "diagnosis": "Paddy Blast Disease (Pyricularia oryzae)",
+        "confidence": "Medium",
+        "summary": "Diagnosed Paddy Blast Disease (Pyricularia oryzae) with Medium confidence."
+      },
+      {
+        "timestamp": "2026-07-29T21:44:51.260134",
+        "diagnosis": "Paddy Blast Disease (Pyricularia oryzae)",
+        "confidence": "Medium",
+        "summary": "Diagnosed Paddy Blast Disease (Pyricularia oryzae) with Medium confidence."
+      },
+      {
+        "timestamp": "2026-07-29T21:53:10.181091",
+        "diagnosis": "Paddy Blast Disease (Pyricularia oryzae)",
+        "confidence": "Medium",
+        "summary": "Diagnosed Paddy Blast Disease (Pyricularia oryzae) with Medium confidence."
+      },
+      {
+        "timestamp": "2026-07-29T21:55:06.810243",
+        "diagnosis": "Paddy Blast Disease (Pyricularia oryzae)",
+        "confidence": "Medium",
+        "summary": "Diagnosed Paddy Blast Disease (Pyricularia oryzae) with Medium confidence."
+      },
+      {
+        "timestamp": "2026-07-29T22:10:10.153284",
+        "diagnosis": "Paddy Blast Disease (Pyricularia oryzae)",
+        "confidence": "Medium",
+        "summary": "Diagnosed Paddy Blast Disease (Pyricularia oryzae) with Medium confidence."
+      }
+    ],
+    "follow_ups": [
+      {
+        "follow_up_id": "fol_1",
+        "timestamp": "2026-07-29T17:31:09.481760",
+        "notes": "Re-inspected paddy leaf. Current: Paddy Blast Disease (Pyricularia oryzae).",
+        "comparison_summary": "Stable (Same Pathology)"
+      },
+      {
+        "follow_up_id": "fol_2",
+        "timestamp": "2026-07-29T17:32:20.384124",
+        "notes": "Re-inspected paddy leaf. Current: Paddy Blast Disease (Pyricularia oryzae).",
+        "comparison_summary": "Stable (Same Pathology)"
+      },
+      {
+        "follow_up_id": "fol_3",
+        "timestamp": "2026-07-29T17:34:58.941560",
+        "notes": "Re-inspected paddy leaf. Current: Paddy Blast Disease (Pyricularia oryzae).",
+        "comparison_summary": "Stable (Same Pathology)"
+      },
+      {
+        "follow_up_id": "fol_4",
+        "timestamp": "2026-07-29T17:37:47.867247",
+        "notes": "Re-inspected paddy leaf. Current: Paddy Blast Disease (Pyricularia oryzae).",
+        "comparison_summary": "Stable (Same Pathology)"
+      },
+      {
+        "follow_up_id": "fol_5",
+        "timestamp": "2026-07-29T17:45:41.701137",
+        "notes": "Re-inspected paddy leaf. Current: Paddy Blast Disease (Pyricularia oryzae).",
+        "comparison_summary": "Stable (Same Pathology)"
+      },
+      {
+        "follow_up_id": "fol_6",
+        "timestamp": "2026-07-29T17:47:44.659421",
+        "notes": "Re-inspected paddy leaf. Current: Paddy Blast Disease (Pyricularia oryzae).",
+        "comparison_summary": "Stable (Same Pathology)"
+      },
+      {
+        "follow_up_id": "fol_7",
+        "timestamp": "2026-07-29T17:51:38.690721",
+        "notes": "Re-inspected paddy leaf. Current: Paddy Blast Disease (Pyricularia oryzae).",
+        "comparison_summary": "Stable (Same Pathology)"
+      },
+      {
+        "follow_up_id": "fol_8",
+        "timestamp": "2026-07-29T17:59:10.880635",
+        "notes": "Re-inspected paddy leaf. Current: Paddy Blast Disease (Pyricularia oryzae).",
+        "comparison_summary": "Stable (Same Pathology)"
+      },
+      {
+        "follow_up_id": "fol_9",
+        "timestamp": "2026-07-29T18:20:40.540312",
+        "notes": "Re-inspected paddy leaf. Current: Paddy Blast Disease (Pyricularia oryzae).",
+        "comparison_summary": "Stable (Same Pathology)"
+      },
+      {
+        "follow_up_id": "fol_10",
+        "timestamp": "2026-07-29T20:37:55.038343",
+        "notes": "Re-inspected paddy leaf. Current: Paddy Blast Disease (Pyricularia oryzae).",
+        "comparison_summary": "Stable (Same Pathology)"
+      },
+      {
+        "follow_up_id": "fol_11",
+        "timestamp": "2026-07-29T20:43:14.639003",
+        "notes": "Re-inspected paddy leaf. Current: Paddy Blast Disease (Pyricularia oryzae).",
+        "comparison_summary": "Stable (Same Pathology)"
+      },
+      {
+        "follow_up_id": "fol_12",
+        "timestamp": "2026-07-29T20:47:03.547660",
+        "notes": "Re-inspected paddy leaf. Current: Paddy Blast Disease (Pyricularia oryzae).",
+        "comparison_summary": "Stable (Same Pathology)"
+      },
+      {
+        "follow_up_id": "fol_13",
+        "timestamp": "2026-07-29T20:59:01.190876",
+        "notes": "Re-inspected paddy leaf. Current: Paddy Blast Disease (Pyricularia oryzae).",
+        "comparison_summary": "Stable (Same Pathology)"
+      },
+      {
+        "follow_up_id": "fol_14",
+        "timestamp": "2026-07-29T21:08:46.794118",
+        "notes": "Re-inspected paddy leaf. Current: Paddy Blast Disease (Pyricularia oryzae).",
+        "comparison_summary": "Stable (Same Pathology)"
+      },
+      {
+        "follow_up_id": "fol_15",
+        "timestamp": "2026-07-29T21:11:43.976987",
+        "notes": "Re-inspected paddy leaf. Current: Paddy Blast Disease (Pyricularia oryzae).",
+        "comparison_summary": "Stable (Same Pathology)"
+      },
+      {
+        "follow_up_id": "fol_16",
+        "timestamp": "2026-07-29T21:33:35.612815",
+        "notes": "Re-inspected paddy leaf. Current: Paddy Blast Disease (Pyricularia oryzae).",
+        "comparison_summary": "Stable (Same Pathology)"
+      },
+      {
+        "follow_up_id": "fol_17",
+        "timestamp": "2026-07-29T21:44:51.260134",
+        "notes": "Re-inspected paddy leaf. Current: Paddy Blast Disease (Pyricularia oryzae).",
+        "comparison_summary": "Stable (Same Pathology)"
+      },
+      {
+        "follow_up_id": "fol_18",
+        "timestamp": "2026-07-29T21:53:10.181091",
+        "notes": "Re-inspected paddy leaf. Current: Paddy Blast Disease (Pyricularia oryzae).",
+        "comparison_summary": "Stable (Same Pathology)"
+      },
+      {
+        "follow_up_id": "fol_19",
+        "timestamp": "2026-07-29T21:55:06.810243",
+        "notes": "Re-inspected paddy leaf. Current: Paddy Blast Disease (Pyricularia oryzae).",
+        "comparison_summary": "Stable (Same Pathology)"
+      },
+      {
+        "follow_up_id": "fol_20",
+        "timestamp": "2026-07-29T22:10:10.153284",
+        "notes": "Re-inspected paddy leaf. Current: Paddy Blast Disease (Pyricularia oryzae).",
+        "comparison_summary": "Stable (Same Pathology)"
+      }
+    ]
+  },
+  "case_stability_test_sess": {
+    "case_id": "case_stability_test_sess",
+    "session_id": "stability_test_sess",
+    "created_at": "2026-07-29T17:36:25.993829",
+    "updated_at": "2026-07-29T17:36:25.993829",
+    "disease": "Leaf Spot (Cercospora oryzae)",
+    "confidence": "Medium",
+    "fertilizer_plan": "Urea 50.0kg, TSP 25.0kg, MOP 25.0kg",
+    "safety_status": "COMPLIANT",
+    "quality_score": 1.0,
+    "image_count": 1,
+    "snapshots": [
+      {
+        "timestamp": "2026-07-29T17:36:25.993829",
+        "diagnosis": "Leaf Spot (Cercospora oryzae)",
+        "confidence": "Medium",
+        "summary": "Diagnosed Leaf Spot (Cercospora oryzae) with Medium confidence."
+      }
+    ],
+    "follow_ups": []
+  },
+  "case_active_session": {
+    "case_id": "case_active_session",
+    "session_id": "active_session",
+    "created_at": "2026-07-29T17:39:39.705354",
+    "updated_at": "2026-07-31T10:45:52.735132",
+    "disease": "Sheath Blight (Rhizoctonia solani)",
+    "confidence": "Medium",
+    "fertilizer_plan": "Urea 50.0kg, TSP 25.0kg, MOP 25.0kg",
+    "safety_status": "COMPLIANT",
+    "quality_score": 0.97,
+    "image_count": 0,
+    "snapshots": [
+      {
+        "timestamp": "2026-07-29T17:39:39.705354",
+        "diagnosis": "Paddy Blast disease (Magnaporthe oryzae)",
+        "confidence": "High",
+        "summary": "Diagnosed Paddy Blast disease (Magnaporthe oryzae) with High confidence."
+      },
+      {
+        "timestamp": "2026-07-29T17:53:51.578475",
+        "diagnosis": "Paddy Blast disease (Magnaporthe oryzae)",
+        "confidence": "High",
+        "summary": "Diagnosed Paddy Blast disease (Magnaporthe oryzae) with High confidence."
+      },
+      {
+        "timestamp": "2026-07-29T17:55:57.878116",
+        "diagnosis": "General Paddy Query",
+        "confidence": "High",
+        "summary": "Diagnosed General Paddy Query with High confidence."
+      },
+      {
+        "timestamp": "2026-07-29T18:00:06.277672",
+        "diagnosis": "Paddy Blast disease (Magnaporthe oryzae)",
+        "confidence": "High",
+        "summary": "Diagnosed Paddy Blast disease (Magnaporthe oryzae) with High confidence."
+      },
+      {
+        "timestamp": "2026-07-29T18:17:44.641562",
+        "diagnosis": "Paddy Blast disease (Magnaporthe oryzae)",
+        "confidence": "High",
+        "summary": "Diagnosed Paddy Blast disease (Magnaporthe oryzae) with High confidence."
+      },
+      {
+        "timestamp": "2026-07-29T20:40:30.337855",
+        "diagnosis": "Paddy Blast disease (Magnaporthe oryzae)",
+        "confidence": "High",
+        "summary": "Diagnosed Paddy Blast disease (Magnaporthe oryzae) with High confidence."
+      },
+      {
+        "timestamp": "2026-07-31T10:31:55.486893",
+        "diagnosis": "Paddy Blast disease (Magnaporthe oryzae)",
+        "confidence": "High",
+        "summary": "Diagnosed Paddy Blast disease (Magnaporthe oryzae) with High confidence."
+      },
+      {
+        "timestamp": "2026-07-31T10:33:02.165462",
+        "diagnosis": "Paddy Blast disease (Magnaporthe oryzae)",
+        "confidence": "High",
+        "summary": "Diagnosed Paddy Blast disease (Magnaporthe oryzae) with High confidence."
+      },
+      {
+        "timestamp": "2026-07-31T10:33:45.899675",
+        "diagnosis": "Paddy Blast disease (Magnaporthe oryzae)",
+        "confidence": "High",
+        "summary": "Diagnosed Paddy Blast disease (Magnaporthe oryzae) with High confidence."
+      },
+      {
+        "timestamp": "2026-07-31T10:35:04.701776",
+        "diagnosis": "Paddy Blast disease (Magnaporthe oryzae)",
+        "confidence": "High",
+        "summary": "Diagnosed Paddy Blast disease (Magnaporthe oryzae) with High confidence."
+      },
+      {
+        "timestamp": "2026-07-31T10:37:49.198532",
+        "diagnosis": "General Paddy Query",
+        "confidence": "High",
+        "summary": "Diagnosed General Paddy Query with High confidence."
+      },
+      {
+        "timestamp": "2026-07-31T10:40:43.979223",
+        "diagnosis": "Sheath Blight (Rhizoctonia solani)",
+        "confidence": "Medium",
+        "summary": "Diagnosed Sheath Blight (Rhizoctonia solani) with Medium confidence."
+      },
+      {
+        "timestamp": "2026-07-31T10:45:52.735132",
+        "diagnosis": "Sheath Blight (Rhizoctonia solani)",
+        "confidence": "Medium",
+        "summary": "Diagnosed Sheath Blight (Rhizoctonia solani) with Medium confidence."
+      }
+    ],
+    "follow_ups": [
+      {
+        "follow_up_id": "fol_1",
+        "timestamp": "2026-07-29T17:53:51.578475",
+        "notes": "Re-inspected paddy leaf. Current: Paddy Blast disease (Magnaporthe oryzae).",
+        "comparison_summary": "Stable (Same Pathology)"
+      },
+      {
+        "follow_up_id": "fol_2",
+        "timestamp": "2026-07-29T17:55:57.878116",
+        "notes": "Re-inspected paddy leaf. Current: General Paddy Query.",
+        "comparison_summary": "Different Disease Suspected (Paddy Blast disease (Magnaporthe oryzae) -> General Paddy Query)"
+      },
+      {
+        "follow_up_id": "fol_3",
+        "timestamp": "2026-07-29T18:00:06.277672",
+        "notes": "Re-inspected paddy leaf. Current: Paddy Blast disease (Magnaporthe oryzae).",
+        "comparison_summary": "Different Disease Suspected (General Paddy Query -> Paddy Blast disease (Magnaporthe oryzae))"
+      },
+      {
+        "follow_up_id": "fol_4",
+        "timestamp": "2026-07-29T18:17:44.641562",
+        "notes": "Re-inspected paddy leaf. Current: Paddy Blast disease (Magnaporthe oryzae).",
+        "comparison_summary": "Stable (Same Pathology)"
+      },
+      {
+        "follow_up_id": "fol_5",
+        "timestamp": "2026-07-29T20:40:30.337855",
+        "notes": "Re-inspected paddy leaf. Current: Paddy Blast disease (Magnaporthe oryzae).",
+        "comparison_summary": "Stable (Same Pathology)"
+      },
+      {
+        "follow_up_id": "fol_6",
+        "timestamp": "2026-07-31T10:31:55.486893",
+        "notes": "Re-inspected paddy leaf. Current: Paddy Blast disease (Magnaporthe oryzae).",
+        "comparison_summary": "Stable (Same Pathology)"
+      },
+      {
+        "follow_up_id": "fol_7",
+        "timestamp": "2026-07-31T10:33:02.165462",
+        "notes": "Re-inspected paddy leaf. Current: Paddy Blast disease (Magnaporthe oryzae).",
+        "comparison_summary": "Stable (Same Pathology)"
+      },
+      {
+        "follow_up_id": "fol_8",
+        "timestamp": "2026-07-31T10:33:45.899675",
+        "notes": "Re-inspected paddy leaf. Current: Paddy Blast disease (Magnaporthe oryzae).",
+        "comparison_summary": "Stable (Same Pathology)"
+      },
+      {
+        "follow_up_id": "fol_9",
+        "timestamp": "2026-07-31T10:35:04.701776",
+        "notes": "Re-inspected paddy leaf. Current: Paddy Blast disease (Magnaporthe oryzae).",
+        "comparison_summary": "Stable (Same Pathology)"
+      },
+      {
+        "follow_up_id": "fol_10",
+        "timestamp": "2026-07-31T10:37:49.198532",
+        "notes": "Re-inspected paddy leaf. Current: General Paddy Query.",
+        "comparison_summary": "Different Disease Suspected (Paddy Blast disease (Magnaporthe oryzae) -> General Paddy Query)"
+      },
+      {
+        "follow_up_id": "fol_11",
+        "timestamp": "2026-07-31T10:40:43.979223",
+        "notes": "Re-inspected paddy leaf. Current: Sheath Blight (Rhizoctonia solani).",
+        "comparison_summary": "Different Disease Suspected (General Paddy Query -> Sheath Blight (Rhizoctonia solani))"
+      },
+      {
+        "follow_up_id": "fol_12",
+        "timestamp": "2026-07-31T10:45:52.735132",
+        "notes": "Re-inspected paddy leaf. Current: Sheath Blight (Rhizoctonia solani).",
+        "comparison_summary": "Stable (Same Pathology)"
+      }
+    ]
+  }
+}

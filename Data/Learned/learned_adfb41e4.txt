@@ -1,0 +1,19 @@
+Farmer Query: How do I identify and control Brown Planthopper (BPH) pest attacks in paddy fields using DOA certified methods?
+Diagnosis: Brown Planthopper (BPH) infestation
+Recommended Treatment: Synchronizing planting dates, Using resistant varieties, Introducing natural predators, Applying insecticides like buprofezin or dinotefuran
+Verified Advisory: ### 🔬 Disease Diagnosis Report
+**Suspected Disease:** Brown Planthopper (BPH) infestation
+**Confidence Level:** `High`
+
+#### 🔍 Key Symptoms Identified:
+- Yellowing or browning of leaves
+- Stunted growth
+- Presence of honeydew droplets on plants
+
+#### 🛡️ Recommended DOA Treatments:
+- Synchronizing planting dates
+- Using resistant varieties
+- Introducing natural predators
+- Applying insecticides like buprofezin or dinotefuran
+
+---

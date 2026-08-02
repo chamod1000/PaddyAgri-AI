@@ -5,7 +5,7 @@ Combines outputs from multiple specialized agents (Diagnostic, Fertilizer, Gener
 into a single, coherent, highly accurate final answer.
 """
 
-from typing import Optional, Any
+from typing import Optional, Any, List, Dict
 from core.agent_messages import DiagnosticResult, FertilizerRecommendation, ReflectionResult
 from core.agents.base_agent import BaseAgent
 from config.model_provider import get_reasoning_model
@@ -26,10 +26,18 @@ class SynthesisAgent(BaseAgent):
         diagnostic_info: Optional[Any] = None,
         fertilizer_info: Optional[Any] = None,
         general_info: Optional[Any] = None,
-        reflection_result: Optional[Any] = None
+        reflection_result: Optional[Any] = None,
+        conversation_history: Optional[List[Dict[str, str]]] = None
     ) -> str:
         """Zero-latency Local Synthesizer: formats agent results directly into markdown in 0ms."""
-        return "".join(list(self.synthesize_stream(user_query, diagnostic_info, fertilizer_info, general_info, reflection_result)))
+        return "".join(list(self.synthesize_stream(
+            user_query,
+            diagnostic_info,
+            fertilizer_info,
+            general_info,
+            reflection_result,
+            conversation_history=conversation_history
+        )))
 
     def synthesize_stream(
         self,
@@ -39,7 +47,8 @@ class SynthesisAgent(BaseAgent):
         general_info: Optional[Any] = None,
         reflection_result: Optional[Any] = None,
         weather_info: Optional[Any] = None,
-        final_synthesis: Optional[str] = None
+        final_synthesis: Optional[str] = None,
+        conversation_history: Optional[List[Dict[str, str]]] = None
     ):
         """Zero-latency Conversational Streamer: Uses ConversationExperienceEngine for organic ChatGPT/Claude AI dialogue."""
         from core.synthesis.conversation_experience_engine import ConversationExperienceEngine
@@ -51,7 +60,8 @@ class SynthesisAgent(BaseAgent):
             weather_info=weather_info,
             general_info=general_info,
             reflection_result=reflection_result,
-            final_synthesis=final_synthesis
+            final_synthesis=final_synthesis,
+            conversation_history=conversation_history,
         )
 
         if conversational_text.strip():

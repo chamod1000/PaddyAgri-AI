@@ -1,0 +1,29 @@
+Farmer Query: My paddy has blast disease and recommend fertilizer.
+Diagnosis: Paddy Blast disease (Magnaporthe oryzae)
+Recommended Treatment: use of resistant varieties, draining of water and keeping fields dry, balanced fertilization, application of fungicides such as azoxystrobin or pyraclostrobin
+Verified Advisory: ### 🔬 Disease Diagnosis Report
+**Suspected Disease:** Paddy Blast disease (Magnaporthe oryzae)
+**Confidence Level:** `High`
+
+#### 🔍 Key Symptoms Identified:
+- sudden appearance of small, circular, and sunken lesions on the leaves
+- white or pinkish mycelium growth
+- eventual death of the plant
+
+#### 🛡️ Recommended DOA Treatments:
+- use of resistant varieties
+- draining of water and keeping fields dry
+- balanced fertilization
+- application of fungicides such as azoxystrobin or pyraclostrobin
+
+---
+### 🌾 NPK Fertilizer Schedule (Maha Season)
+- **Urea Dosage:** `60.0 kg / acre`
+- **TSP Dosage:** `28.0 kg / acre`
+- **MOP Dosage:** `28.0 kg / acre`
+
+#### 📅 Application Timeline:
+- Basal: TSP 28kg + Urea 12kg
+- Top 1 (2wk): Urea 24kg
+- Top 2 (4wk): MOP 14kg
+- Panicle Initiation (6wk): Urea 24kg + MOP 14kg

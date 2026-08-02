@@ -5,6 +5,8 @@ venv/
 faiss_db/
 chroma_db/
 .DS_Store
+.claude/
+test_none_fix.py
 
 # Exclude PDFs exceeding GitHub's 100MB file size limit (Full corpus available on Google Drive)
 Data/PDF/General_Cultivation_Guidelines/2009 VRC.pdf
