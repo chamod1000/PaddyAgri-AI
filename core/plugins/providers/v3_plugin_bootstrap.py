@@ -9,8 +9,6 @@ from core.tools.tool_spec import ToolSpec
 from core.tools.unified_registry import unified_registry
 from core.weather_service import WeatherService
 from tools.tools import rag_search_tool
-from core.agents.diagnostic_agent import DiagnosticAgent
-from core.agents.fertilizer_agent import FertilizerAgent
 from core.agent_messages import AgentMessage, QueryIntent
 
 
@@ -18,6 +16,11 @@ def init_v3_plugins():
     """Initializes and registers standard agricultural capability and tool specs."""
     if unified_registry.get_capability("weather_intelligence"):
         return  # Already registered
+
+    # Import agents here (not at module level) so that Streamlit secrets
+    # are fully loaded into os.environ before LLM models are initialized.
+    from core.agents.diagnostic_agent import DiagnosticAgent
+    from core.agents.fertilizer_agent import FertilizerAgent
 
     # Singleton agent references
     weather_svc = WeatherService()

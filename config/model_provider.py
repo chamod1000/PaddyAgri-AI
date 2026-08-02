@@ -23,17 +23,37 @@ from langchain_core.runnables import Runnable, RunnableConfig
 load_dotenv()
 
 # Streamlit Community Cloud secrets mapping bridge
-try:
-    import streamlit as st
-    if hasattr(st, "secrets"):
+# Robust version: catches all exceptions, handles flat + nested secrets
+def _load_streamlit_secrets() -> None:
+    """Maps Streamlit Cloud secrets to os.environ for all providers."""
+    try:
+        import streamlit as st
+        secrets_obj = getattr(st, "secrets", None)
+        if secrets_obj is None:
+            return
         try:
-            for k, v in st.secrets.items():
-                if isinstance(v, str) and not os.getenv(k):
-                    os.environ[k] = str(v)
-        except st.errors.StreamlitSecretNotFoundError:
-            pass
-except (ImportError, AttributeError):
-    pass
+            items = dict(secrets_obj)
+        except Exception:
+            return
+        loaded = []
+        for k, v in items.items():
+            if isinstance(v, str):
+                if not os.environ.get(k):
+                    os.environ[k] = v
+                    loaded.append(k)
+            elif hasattr(v, "items"):
+                # Handle nested TOML sections like [section]\nkey = "val"
+                for sub_k, sub_v in v.items():
+                    env_key = f"{k}__{sub_k}".upper()
+                    if isinstance(sub_v, str) and not os.environ.get(env_key):
+                        os.environ[env_key] = sub_v
+                        loaded.append(env_key)
+        if loaded:
+            print(f"[SECRETS] Loaded {len(loaded)} secret(s) from Streamlit Cloud: {loaded}")
+    except Exception as _e:
+        print(f"[SECRETS] Warning: Could not load Streamlit secrets: {_e}")
+
+_load_streamlit_secrets()
 
 
 # ══════════════════════════════════════════════
