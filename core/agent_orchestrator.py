@@ -10,264 +10,257 @@ if hasattr(sys.stdout, "reconfigure"):
 if hasattr(sys.stderr, "reconfigure"):
     sys.stderr.reconfigure(encoding="utf-8")
 
+import copy
+import hashlib
 import uuid
 from datetime import datetime
 from typing import List, Optional, Callable, Any
 
 from core.agent_messages import (
     AgentMessage, QueryIntent, AgentResponse,
-    DiagnosticResult, FertilizerRecommendation, ReflectionResult
+    DiagnosticResult, FertilizerRecommendation, ReflectionResult,
+    VisionAnalysisResult, ProcessingContext, RAGContextChunk,
+    ConversationTurn, CaseMemory, MemoryMetadata, ConversationMemory
 )
-from core.agents import RouterAgent, DiagnosticAgent, FertilizerAgent, ReflectionAgent
+from core.observability import (
+    RequestTrace, VisionTrace, RAGTrace,
+    AgentExecutionTrace, PerformanceTrace, EvaluationTrace
+)
+from core.weather_service import WeatherService
+from core.agents import DiagnosticAgent, FertilizerAgent, ReflectionAgent
+from core.vision_processor import VisionProcessor
 from config.model_provider import get_reasoning_model
-from tools.tools import rag_search_tool
+from tools.tools import rag_search_tool, get_cached_vector_store
 
 
 class PaddyAgentOrchestrator:
     """
-    Main Orchestrator coordinating structured message exchange between:
-    - RouterAgent (Pattern 1: Router Pattern)
-    - DiagnosticAgent (Pattern 2: Tool-Use Pattern)
-    - FertilizerAgent (Pattern 3: Planning & Calculation Pattern)
-    - ReflectionAgent (Pattern 4: Reflection/Self-Critique Pattern)
+    Main Orchestrator coordinating structured message exchange, Telemetry, Weather Context, & V3.0 Capabilities:
+    - VisionProcessor (Vision Abstraction Layer)
+    - DiagnosticAgent (Tool-Use Pattern)
+    - FertilizerAgent (Planning & Calculation Pattern)
+    - WeatherService (Environmental & Seasonal Rule Engine)
+    - SynthesisAgent (Fallback Token Generator Reference)
     """
 
     def __init__(self):
-        print("[ORCHESTRATOR] Initializing Multi-Agent System...")
-        self.router_agent = RouterAgent()
+        import time
+        print("[ORCHESTRATOR V3.0] Initializing Core Services...")
+        t_total_start = time.perf_counter()
+
+        self.vision_processor = VisionProcessor()
         self.diagnostic_agent = DiagnosticAgent()
         self.fertilizer_agent = FertilizerAgent()
-        self.reflection_agent = ReflectionAgent()
-        
+        self.weather_service = WeatherService()
+        self.session_memory: Dict[str, ConversationMemory] = {}
+
         from core.agents.synthesis_agent import SynthesisAgent
         self.synthesis_agent = SynthesisAgent()
 
-    def process_user_request(self, user_query: str, stream: bool = False, step_callback: Optional[Callable[[int, str], None]] = None) -> Any:
+        # Pre-warm Vector Store (FAISS & MiniLM Embeddings)
+        get_cached_vector_store()
+
+        # Initialize V3.0 Architecture Capabilities & Tool Specs
+        from core.plugins.providers.v3_plugin_bootstrap import init_v3_plugins
+        init_v3_plugins()
+
+        tot_dur_ms = (time.perf_counter() - t_total_start) * 1000.0
+        print(f"[ORCHESTRATOR V3.0] Initialization Complete in {tot_dur_ms:.2f} ms ({tot_dur_ms/1000.0:.2f} s)", flush=True)
+
+    def get_or_create_memory(self, session_id: str = "active_session") -> ConversationMemory:
+        """Retrieves or initializes strongly typed ConversationMemory and CaseMemory."""
+        if session_id not in self.session_memory:
+            now_str = datetime.now().isoformat()
+            self.session_memory[session_id] = ConversationMemory(
+                metadata=MemoryMetadata(
+                    session_id=session_id,
+                    request_id=f"req_{uuid.uuid4().hex[:6]}",
+                    created_at=now_str,
+                    updated_at=now_str
+                ),
+                case_memory=CaseMemory(case_id=f"case_{session_id}"),
+                turns=[]
+            )
+        return self.session_memory[session_id]
+
+    def process_user_request(
+        self,
+        user_query: str,
+        image_bytes: Optional[bytes] = None,
+        stream: bool = False,
+        step_callback: Optional[Callable[[int, str], None]] = None,
+        session_id: str = "active_session"
+    ) -> Any:
         import concurrent.futures
         import time
-        session_id = f"msg_{uuid.uuid4().hex[:8]}"
-        message_trace: List[AgentMessage] = []
+        from core.cache import response_cache
+        from core.observability import TraceContext, telemetry_bus
+        from core.context import RequestContext, ProcessingContext
+        from core.planner import PlannerAgent, PlanningIntent
+        from core.tools import AdaptiveToolResolver
+        from core.executor import IntelligentExecutor
+        from core.evidence import EvidenceGraph
+        from core.synthesis import HybridResponseBuilder
+        from core.reflection import RegulatoryReflection
+
+        req_id = f"msg_{uuid.uuid4().hex[:8]}"
+        trace_ctx = TraceContext(session_id=session_id, request_id=req_id)
 
         t_total_start = time.perf_counter()
 
         print(f"\n===========================================================================")
-        print(f"[ORCHESTRATOR] Processing Query: '{user_query}'")
+        print(f"[ORCHESTRATOR V3.0] Processing Query: '{user_query}' | Trace: {trace_ctx.trace_id} | Session: {session_id}")
         print(f"===========================================================================")
 
-        # Step 1: Intent Routing (Router Pattern) - fast classification
-        t_route_0 = time.perf_counter()
-        if step_callback: step_callback(1, "RouterAgent analyzing query intent & script...")
-        intent = self.router_agent.route_query(user_query)
-        t_route_ms = (time.perf_counter() - t_route_0) * 1000
-        print(f"[METRIC] Intent Classification: {t_route_ms:.2f} ms | Intent: {intent.value}")
-        if step_callback: step_callback(1, f"RouterAgent: Classified as {intent.value}")
+        conv_memory = self.get_or_create_memory(session_id)
+        conv_memory.metadata.updated_at = datetime.now().isoformat()
 
-        diagnostic_info: Optional[DiagnosticResult] = None
-        fertilizer_info: Optional[FertilizerRecommendation] = None
-        general_rag_synthesis: Optional[str] = None
+        # 0. Check Response Cache
+        image_hash = hashlib.sha256(image_bytes).hexdigest() if image_bytes else None
+        cache_key = response_cache.generate_key(user_query, image_hash=image_hash)
+        cached_res = response_cache.get(cache_key)
+        if cached_res:
+            print(f"[ORCHESTRATOR V3.0] CACHE HIT! Returning cached response in sub-10ms.")
+            telemetry_bus.emit("RESPONSE_CACHE_HIT", {"query": user_query}, trace_id=trace_ctx.trace_id)
+            if step_callback: step_callback(4, "ResponseCache: Served instant response (0 LLM Tokens)")
+            
+            cached_text = cached_res if isinstance(cached_res, str) else getattr(cached_res, "final_synthesis", str(cached_res))
+            
+            # Record cache-hit turns into ConversationMemory
+            if cached_text and cached_text.strip():
+                conv_memory.turns.append(
+                    ConversationTurn(
+                        role="user",
+                        content=user_query,
+                        has_image=image_bytes is not None,
+                        vision_summary=None
+                    )
+                )
+                conv_memory.turns.append(
+                    ConversationTurn(
+                        role="assistant",
+                        content=cached_text
+                    )
+                )
 
-        # Step 2: Parallel Agent Communication & Task Execution using ThreadPoolExecutor
-        t_agents_0 = time.perf_counter()
-        if step_callback: step_callback(2, "FAISS RAG Retriever: Instant vector search (~35ms)...")
-        if step_callback: step_callback(3, "Swarm Agents Reasoning: Synthesizing pathology & NPK schedule...")
-        
-        def run_diag():
-            msg_to_diag = AgentMessage(
-                message_id=f"{session_id}_diag",
-                sender="RouterAgent",
-                receiver="DiagnosticAgent",
-                intent=intent,
-                user_query=user_query,
-                payload={"task": "disease_diagnosis"}
-            )
-            message_trace.append(msg_to_diag)
-            print(f"[AGENT MESSAGE] {msg_to_diag.sender} -> {msg_to_diag.receiver} | Intent: {intent.value}")
-            return self.diagnostic_agent.process(msg_to_diag)
+            if isinstance(cached_res, str):
+                cached_res = AgentResponse(
+                    query=user_query,
+                    intent=QueryIntent.GENERAL,
+                    final_synthesis=cached_res
+                )
+            return cached_res, self.synthesis_agent
 
-        def run_fert():
-            msg_to_fert = AgentMessage(
-                message_id=f"{session_id}_fert",
-                sender="RouterAgent",
-                receiver="FertilizerAgent",
-                intent=intent,
-                user_query=user_query,
-                payload={"task": "fertilizer_recommendation"}
-            )
-            message_trace.append(msg_to_fert)
-            print(f"[AGENT MESSAGE] {msg_to_fert.sender} -> {msg_to_fert.receiver} | Intent: {intent.value}")
-            return self.fertilizer_agent.process(msg_to_fert)
+        # Step 0: Vision Processing Modality
+        vision_result: Optional[VisionAnalysisResult] = None
+        if image_bytes:
+            if step_callback: step_callback(1, "Vision Layer: Extracting visual pathology features...")
+            print("[ORCHESTRATOR V3.0] Ingesting attached image through Vision Processor...")
+            vision_result = self.vision_processor.analyze_image(image_bytes, user_query=user_query)
 
-        # Execute reasoning agents in parallel if needed
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            future_diag = None
-            future_fert = None
-
-            if intent in [QueryIntent.DISEASE_DIAGNOSIS, QueryIntent.BOTH]:
-                future_diag = executor.submit(run_diag)
-
-            if intent in [QueryIntent.FERTILIZER_RECOMMENDATION, QueryIntent.BOTH]:
-                future_fert = executor.submit(run_fert)
-
-            if future_diag:
-                diagnostic_info = future_diag.result()
-            if future_fert:
-                fertilizer_info = future_fert.result()
-
-        t_agents_ms = (time.perf_counter() - t_agents_0) * 1000
-        print(f"[METRIC] Parallel Agent Execution Time: {t_agents_ms:.2f} ms")
-
-        # Step 2b: Handle GENERAL intent (Seed Paddy Standards, Quarantine, Soil Conservation Acts)
-        if intent == QueryIntent.GENERAL or (not diagnostic_info and not fertilizer_info):
-            msg_to_gen = AgentMessage(
-                message_id=f"{session_id}_gen",
-                sender="RouterAgent",
-                receiver="DiagnosticAgent",
-                intent=QueryIntent.GENERAL,
-                user_query=user_query,
-                payload={"task": "general_agriculture_rag"}
-            )
-            message_trace.append(msg_to_gen)
-            print(f"[AGENT MESSAGE] {msg_to_gen.sender} -> {msg_to_gen.receiver} | Intent: GENERAL")
-            general_rag_synthesis = self._process_general_query(user_query)
-
-        if step_callback: step_callback(3, "Diagnostic & Fertilizer Agents: Pathology & NPK synthesis complete")
-
-        # Step 3: Built-in Instant Safety Verification (0ms latency - rules embedded in Agent System Prompts)
-        t_refl_0 = time.perf_counter()
-        if step_callback: step_callback(4, "Regulatory Verification: Pesticide Act No.33 & Fertilizer Ordinance Compliant")
-        reflection_result = self.reflection_agent.process(diagnostic=diagnostic_info, fertilizer=fertilizer_info)
-        t_refl_ms = (time.perf_counter() - t_refl_0) * 1000
-        print(f"[METRIC] Reflection Safety Verification: {t_refl_ms:.2f} ms")
-
-        t_total_ms = (time.perf_counter() - t_total_start) * 1000
-        print(f"[SUMMARY METRIC] Total Processing Time for '{user_query[:35]}...': {t_total_ms:.2f} ms\n")
-
-        if stream:
-            response_obj = AgentResponse(
-                query=user_query,
-                intent=intent,
-                diagnostic_info=diagnostic_info,
-                fertilizer_info=fertilizer_info,
-                general_info=general_rag_synthesis,
-                reflection_result=reflection_result,
-                final_synthesis="",
-                message_trace=message_trace
-            )
-            return response_obj, self.synthesis_agent
-
-        # Step 4: Synthesis of Final Output (Sync)
-        final_synthesis = self._build_synthesis(
-            user_query, intent, diagnostic_info, fertilizer_info, general_rag_synthesis, reflection_result
-        )
-
-        return AgentResponse(
-            query=user_query,
-            intent=intent,
-            diagnostic_info=diagnostic_info,
-            fertilizer_info=fertilizer_info,
-            general_info=general_rag_synthesis,
-            reflection_result=reflection_result,
-            final_synthesis=final_synthesis,
-            message_trace=message_trace
-        )
-
-
-
-    def _process_general_query(self, user_query: str) -> str:
-        """Processes General Agriculture / Seed Standards queries via RAG vector search + LLM."""
-        llm = self.diagnostic_agent.model
-        rag_chunks = rag_search_tool.invoke({"query": user_query, "top_k": 3})
-
-        context_text = "\n\n".join([f"[{c['filename']} Page {c['page']}]: {c['content']}" for c in rag_chunks])
-
-        system_prompt = (
-            "You are a Senior Agricultural Officer for the Sri Lanka Department of Agriculture.\n"
-            "Provide a detailed, step-by-step answer to the farmer's general query using the retrieved RAG context.\n"
-            "Clearly state standards, germination percentages, and seed paddy acts if applicable.\n\n"
-            f"RAG Knowledge Base Context:\n{context_text}"
-        )
-
-        messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_query}
+        # Extract recent turns (sliding window of last 4 turns) from existing ConversationMemory
+        recent_history = [
+            {"role": turn.role, "content": turn.content}
+            for turn in conv_memory.turns[-4:]
         ]
 
-        try:
-            stream_iter = llm.stream(messages)
-            first_chunk = next(stream_iter)
+        # Step 1: Planner Agent (Lightweight JSON Compiler <300 tokens, <400ms)
+        if step_callback: step_callback(1, "PlannerAgent V3.0: Compiling query into capability plan...")
+        planner = PlannerAgent()
+        planner_output = planner.plan(user_query, has_image=image_bytes is not None)
+        telemetry_bus.emit("PLANNER_SUCCESS", planner_output.model_dump(), trace_id=trace_ctx.trace_id)
 
-            def _generator():
-                yield first_chunk.content
-                for chunk in stream_iter:
-                    yield chunk.content
-            return _generator()
-        except StopIteration:
-            return "No response from AI."
-        except Exception as primary_err:
-            if "429" in str(primary_err) or "RESOURCE_EXHAUSTED" in str(primary_err):
-                from config.model_provider import set_gemini_quota_exhausted
-                set_gemini_quota_exhausted()
-            print(f"[ORCHESTRATOR WARNING] Primary Gemini model failed ({primary_err}).")
-            
-            print("[ORCHESTRATOR] Retrying with Groq 70B fallback for English query...")
-            try:
-                fallback_llm = get_reasoning_model()
-                stream_iter = fallback_llm.stream(messages)
-                first_chunk = next(stream_iter)
-                def _fb_generator():
-                    yield first_chunk.content
-                    for chunk in stream_iter:
-                        yield chunk.content
-                return _fb_generator()
-            except StopIteration:
-                return "No fallback response from AI."
-            except Exception as fb_err:
-                print(f"[ORCHESTRATOR ERROR] General RAG fallback synthesis failed: {fb_err}")
-            
-            # Final Hardcoded Fallbacks if API calls fail or are skipped
-            return (
-                "📜 **Certified Seed Paddy Standards in Sri Lanka:**\n\n"
-                "• **Minimum Germination Rate:** Must be 85% or higher.\n\n"
-                "• **Pure Seed Standard:** Minimum 98.0% pure seeds.\n\n"
-                "• **Maximum Moisture Content:** Must not exceed 13.0%.\n\n"
-                "• **Weed / Foreign Seeds:** Maximum 0.1% allowed.\n\n"
-                "• **Authority:** Department of Agriculture Seed Certification Service (SCS) & Seed Act No. 22 of 2003."
+        # Step 2: Adaptive Tool Resolution & Intelligent DAG Execution
+        if step_callback: step_callback(2, f"AdaptiveToolResolver: Resolving capabilities {planner_output.tasks}...")
+        resolved_tools = AdaptiveToolResolver.resolve_capabilities(planner_output.tasks)
+
+        # Assemble ProcessingContext
+        processing_ctx = ProcessingContext(
+            user_query=user_query,
+            recent_history=recent_history,
+            vision_analysis=vision_result
+        )
+
+        evidence_graph = EvidenceGraph(session_id=session_id, user_query=user_query)
+        executor = IntelligentExecutor()
+        
+        if step_callback: step_callback(3, f"IntelligentExecutor: Executing parallel tool DAG...")
+        evidence_graph = executor.execute_plan(resolved_tools, processing_ctx, evidence_graph)
+
+        # Step 3: Hybrid Response Synthesis
+        if step_callback: step_callback(4, "HybridResponseBuilder: Synthesizing grounded response...")
+        final_text, ui_comps = HybridResponseBuilder.render_response(evidence_graph)
+
+        # Step 4: Conditional Regulatory Reflection Audit (Pesticide Act No. 33)
+        final_text, has_violation = RegulatoryReflection.audit_response(final_text)
+
+        # Check for failed/empty synthesis before recording in memory
+        is_failed_synthesis = (
+            not final_text or not final_text.strip() or
+            (bool(evidence_graph.errors_encountered) and "No specific evidence was collected" in final_text)
+        )
+
+        if not is_failed_synthesis:
+            conv_memory.turns.append(
+                ConversationTurn(
+                    role="user",
+                    content=user_query,
+                    has_image=image_bytes is not None,
+                    vision_summary=vision_result.raw_observations if vision_result else None
+                )
+            )
+            conv_memory.turns.append(
+                ConversationTurn(
+                    role="assistant",
+                    content=final_text
+                )
             )
 
-    def _build_synthesis(
-        self,
-        query: str,
-        intent: QueryIntent,
-        diag: Optional[DiagnosticResult],
-        fert: Optional[FertilizerRecommendation],
-        general_synthesis: Optional[str] = None,
-        refl: Optional[ReflectionResult] = None
-    ) -> str:
-        # Step 4: Swarm Collaboration - Synthesis Agent Review
-        print("[ORCHESTRATOR] Triggering SynthesisAgent for final output generation...")
-        final_output = self.synthesis_agent.synthesize(
-            user_query=query,
-            diagnostic_info=diag,
-            fertilizer_info=fert,
-            general_info=general_synthesis,
-            reflection_result=refl
+        # Update case memory tracking
+        diag_art = evidence_graph.get_artifact("pathology_diagnosis")
+        if diag_art and isinstance(diag_art, dict):
+            dis = diag_art.get("suspected_disease")
+            if dis and dis not in conv_memory.case_memory.previous_diagnoses:
+                conv_memory.case_memory.previous_diagnoses.append(dis)
+        if image_bytes:
+            conv_memory.case_memory.uploaded_images_count += 1
+
+        # Save to Response Cache (only for valid, successful responses)
+        banned_failure_terms = (
+            "No specific evidence was collected for this query",
+            "An internal error occurred",
+            "Pipeline execution failed",
+            "LLM API error",
+            "Service unavailable"
         )
-        return final_output
+        is_cacheable = (
+            isinstance(final_text, str) and
+            bool(final_text.strip()) and
+            len(final_text.strip()) >= 10 and
+            not any(term in final_text for term in banned_failure_terms) and
+            not (bool(evidence_graph.errors_encountered) and not evidence_graph.artifacts)
+        )
+        if is_cacheable:
+            response_cache.put(cache_key, final_text)
 
+        tot_dur_ms = (time.perf_counter() - t_total_start) * 1000.0
+        print(f"[ORCHESTRATOR V3.0] COMPLETE Pipeline Execution: {tot_dur_ms:.2f} ms")
 
-def run_sample_evaluations():
-    """Runs standard evaluation queries to verify multi-agent workflow functionality."""
-    orchestrator = PaddyAgentOrchestrator()
-    queries = [
-        "What are the symptoms of Paddy Blast disease and how to control it?",
-        "What is the recommended fertilizer mixture for Yala season paddy in Polonnaruwa?"
-    ]
-    for idx, q in enumerate(queries, 1):
-        print(f"\n--- EVALUATION SCENARIO {idx} ---")
-        res = orchestrator.process_user_request(q)
-        print(res.final_synthesis)
-        print(f"Messages Exchanged: {len(res.message_trace)}")
+        # Build structured AgentResponse object for 100% UI contract parity
+        fert_art = evidence_graph.get_artifact("npk_formulation")
+        weather_art = evidence_graph.get_artifact("weather_intelligence")
 
+        response_obj = AgentResponse(
+            query=user_query,
+            intent=getattr(planner_output, "intent", QueryIntent.GENERAL),
+            diagnostic_info=diag_art,
+            fertilizer_info=fert_art,
+            general_info=evidence_graph.get_artifact("knowledge_retrieval"),
+            reflection_result=ReflectionResult(all_checks_passed=not has_violation),
+            vision_info=vision_result,
+            processing_context=processing_ctx,
+            weather_info=weather_art,
+            final_synthesis=final_text
+        )
 
-if __name__ == "__main__":
-    run_sample_evaluations()
+        return response_obj, self.synthesis_agent
