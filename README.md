@@ -246,7 +246,7 @@ All test suites execute with **100% PASS**.
 
 ## 📄 License & Author
 
-- **Author**: Chamod & Team
+- **Author**: O.P.C Akalanka
 - **Institution**: Horizon Campus — Faculty of Information Technology (IT41043)
 - **Corpus Credit**: Sri Lanka Department of Agriculture (DOA) Guidelines & Paddy Cultural Handbooks
 - **License**: [MIT License](LICENSE)
