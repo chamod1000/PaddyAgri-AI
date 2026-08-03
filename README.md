@@ -7,7 +7,7 @@
 
 An enterprise-grade, domain-specific Agentic AI application designed to empower Sri Lankan paddy farmers, agricultural extension officers, and researchers. The system combines autonomous multi-agent swarm orchestration, computer vision leaf pathology analysis, vector Retrieval-Augmented Generation (RAG) grounded in Sri Lanka Department of Agriculture (DOA) guidelines, microclimate weather intelligence, regulatory compliance auditing, and multi-turn conversational experience engine.
 
-> **Live Streamlit Cloud Deployment**: [https://paddyagri-ai.streamlit.app](https://paddyagri-ai.streamlit.app) *(Replace with active Streamlit Cloud URL)*
+> **Live Streamlit Cloud Deployment**: https://paddyagri-ai-espspbxa4wmlw7udpmra2a.streamlit.app/
 
 ---
 
