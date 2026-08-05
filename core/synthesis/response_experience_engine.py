@@ -3,7 +3,7 @@ Response Experience Engine - PaddyAgri-AI (CACAA-AO Architecture)
 Author: Lead Conversation Designer & Senior AI UX Architect
 
 Translates raw agent evidence artifacts into dynamic, conversational,
-ChatGPT/Claude-quality responses customized by query intent.
+High-quality responses customized by query intent.
 
 Supported Intent Formats:
   1. KNOWLEDGE: Overview -> Common Symptoms -> Chemical Treatment -> Organic Practices -> Prevention -> Sources
@@ -82,7 +82,7 @@ class ResponseExperienceEngine:
         final_synthesis: Optional[str] = None
     ) -> str:
         """
-        Generates a beautifully structured, conversational, ChatGPT/Claude-quality response.
+        Generates a beautifully structured, conversational, high-quality response.
         """
         mode = cls.detect_experience_mode(
             user_query=user_query,

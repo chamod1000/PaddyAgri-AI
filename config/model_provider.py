@@ -441,7 +441,7 @@ def get_reasoning_model(model_override: Optional[str] = None) -> BaseChatModel:
         ))
         priority += 1
 
-    # Tier 3: Rare Fallbacks (OpenRouter Claude & GPT-4o)
+    # Tier 3: Rare Fallbacks (OpenRouter & GPT-4o)
     if openrouter_api_key:
         target_model = model_override or "anthropic/claude-3.5-sonnet"
         specs.append(ProviderSpec(

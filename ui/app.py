@@ -1,6 +1,6 @@
 """
 Multi-Agent Paddy Disease Diagnostic & Fertilizer Recommendation System
-ChatGPT / Claude / Perplexity / Gemini-Inspired AI Assistant Frontend Interface (ui/app.py)
+PaddyAgri AI Assistant Frontend Interface (ui/app.py)
 
 Module: IT41043 - Agentic AI
 Author: Chamod
@@ -41,12 +41,12 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ── Modern ChatGPT / Claude / Perplexity CSS System ──
+# ── Modern AI Assistant CSS System ──
 st.markdown("""
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
 <style>
     /* ══════════════════════════════════════════════
-       1. CSS DESIGN TOKENS (ChatGPT / Claude Dark Palette)
+       1. CSS DESIGN TOKENS (Dark Palette)
        ══════════════════════════════════════════════ */
     :root {
         --bg-app: #0b0f17;
@@ -656,7 +656,7 @@ def render_assistant_message(msg: dict, msg_index: int = 0):
 
 
 # ══════════════════════════════════════════════
-# SIDEBAR UI (ChatGPT / Claude Style)
+# SIDEBAR UI
 # ══════════════════════════════════════════════
 with st.sidebar:
     st.markdown("""
@@ -879,7 +879,7 @@ if active_query is not None:
     with st.chat_message("assistant", avatar="🌾"):
         thinking_slot = st.empty()
         
-        # Animated Thinking Widget (ChatGPT / Claude style)
+        # Animated Thinking Widget
         with thinking_slot.container():
             st.markdown("""
             <div class="thinking-card">

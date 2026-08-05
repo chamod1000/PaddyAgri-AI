@@ -1,0 +1,43 @@
+[33m38475d3[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mbackup/current-local-state[m[33m)[m refs/remotes/origin/main@{Wed Aug 5 09:50:57 2026}: update by push
+[33m38475d3[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mbackup/current-local-state[m[33m)[m refs/heads/backup/current-local-state@{Wed Aug 5 09:49:32 2026}: merge main: Fast-forward (no commit created; -m option ignored)
+[33m38475d3[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mbackup/current-local-state[m[33m)[m HEAD@{Wed Aug 5 09:49:32 2026}: checkout: moving from backup/current-local-state to main
+[33m38475d3[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mbackup/current-local-state[m[33m)[m HEAD@{Wed Aug 5 09:49:32 2026}: merge main: Fast-forward (no commit created; -m option ignored)
+[33m2f63c24[m HEAD@{Wed Aug 5 09:49:32 2026}: checkout: moving from main to backup/current-local-state
+[33m38475d3[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mbackup/current-local-state[m[33m)[m refs/heads/main@{Wed Aug 5 09:47:02 2026}: commit: fix(entrypoint): correct CLI mode import in run.py
+[33m38475d3[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mbackup/current-local-state[m[33m)[m HEAD@{Wed Aug 5 09:47:02 2026}: commit: fix(entrypoint): correct CLI mode import in run.py
+[33m72faa5f[m refs/heads/main@{Wed Aug 5 09:46:39 2026}: merge master: Merge made by the 'ort' strategy.
+[33m72744fb[m refs/heads/main@{Wed Aug 5 09:46:39 2026}: merge feature/rag-pipeline: Merge made by the 'ort' strategy.
+[33m2ca5d70[m refs/heads/main@{Wed Aug 5 09:46:39 2026}: merge feature/agent-orchestration: Merge made by the 'ort' strategy.
+[33m897efa5[m refs/heads/main@{Wed Aug 5 09:46:39 2026}: merge feature/streamlit-ui: Merge made by the 'ort' strategy.
+[33m72faa5f[m HEAD@{Wed Aug 5 09:46:39 2026}: merge master: Merge made by the 'ort' strategy.
+[33m72744fb[m HEAD@{Wed Aug 5 09:46:39 2026}: merge feature/rag-pipeline: Merge made by the 'ort' strategy.
+[33m2ca5d70[m HEAD@{Wed Aug 5 09:46:39 2026}: merge feature/agent-orchestration: Merge made by the 'ort' strategy.
+[33m897efa5[m HEAD@{Wed Aug 5 09:46:39 2026}: merge feature/streamlit-ui: Merge made by the 'ort' strategy.
+[33m2f63c24[m HEAD@{Wed Aug 5 09:46:39 2026}: checkout: moving from master to main
+[33m042cede[m HEAD@{Wed Aug 5 09:46:37 2026}: commit: sync: update master with current project source of truth
+[33m29528cf[m HEAD@{Wed Aug 5 09:46:34 2026}: checkout: moving from feature/rag-pipeline to master
+[33m3e6bf93[m HEAD@{Wed Aug 5 09:46:32 2026}: commit: sync: update feature/rag-pipeline with current project source of truth
+[33m925d73a[m HEAD@{Wed Aug 5 09:46:31 2026}: checkout: moving from feature/agent-orchestration to feature/rag-pipeline
+[33m3dc8f71[m HEAD@{Wed Aug 5 09:46:28 2026}: commit: sync: update feature/agent-orchestration with current project source of truth
+[33m925d73a[m HEAD@{Wed Aug 5 09:46:27 2026}: checkout: moving from feature/streamlit-ui to feature/agent-orchestration
+[33mf2c2da8[m HEAD@{Wed Aug 5 09:46:24 2026}: commit: sync: update feature/streamlit-ui with current project source of truth
+[33m3af0847[m HEAD@{Wed Aug 5 09:46:21 2026}: checkout: moving from main to feature/streamlit-ui
+[33m2f63c24[m refs/heads/backup/current-local-state@{Wed Aug 5 09:46:15 2026}: branch: Created from main
+[33m2f63c24[m refs/heads/main@{Wed Aug 5 09:45:50 2026}: commit: docs: add Streamlit secrets configuration template
+[33m2f63c24[m HEAD@{Wed Aug 5 09:45:50 2026}: commit: docs: add Streamlit secrets configuration template
+[33m7116633[m HEAD@{Wed Aug 5 09:42:46 2026}: checkout: moving from main to main
+[33m7116633[m HEAD@{Wed Aug 5 09:36:12 2026}: reset: moving to HEAD
+[33m7116633[m HEAD@{Wed Aug 5 09:35:23 2026}: checkout: moving from main to main
+[33m7116633[m refs/heads/main@{Wed Aug 5 09:19:41 2026}: pull origin main: Fast-forward
+[33m7116633[m HEAD@{Wed Aug 5 09:19:41 2026}: pull origin main: Fast-forward
+[33m29528cf[m HEAD@{Wed Aug 5 09:19:40 2026}: checkout: moving from feature/streamlit-ui to main
+[33m3af0847[m HEAD@{Wed Aug 5 09:13:42 2026}: rebase (finish): returning to refs/heads/feature/streamlit-ui
+[33m3af0847[m HEAD@{Wed Aug 5 09:13:42 2026}: rebase (reword): fix(conversation-engine): resolve truncated conversational response
+[33me49d0d4[m HEAD@{Wed Aug 5 09:13:42 2026}: rebase (reword): fix(conversation-engine): resolve truncated conversational response
+[33mf83ea8d[m HEAD@{Wed Aug 5 09:12:10 2026}: rebase (reword): feat(conversation-engine): production hardening for ConversationExperienceEngine
+[33m038d6d9[m HEAD@{Wed Aug 5 09:12:10 2026}: rebase: fast-forward
+[33mc038409[m HEAD@{Wed Aug 5 09:12:10 2026}: rebase (start): checkout c038409
+[33ma9e4aff[m HEAD@{Wed Aug 5 09:07:07 2026}: rebase (abort): returning to refs/heads/feature/streamlit-ui
+[33ma9e4aff[m HEAD@{Wed Aug 5 09:07:07 2026}: rebase (abort): returning to refs/heads/feature/streamlit-ui
+[33m7116633[m refs/remotes/origin/HEAD@{Wed Aug 5 09:06:29 2026}: fetch
+[33m7116633[m refs/remotes/origin/main@{Wed Aug 5 09:06:29 2026}: fetch origin: storing head

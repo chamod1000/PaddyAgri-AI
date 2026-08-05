@@ -50,7 +50,7 @@ class SynthesisAgent(BaseAgent):
         final_synthesis: Optional[str] = None,
         conversation_history: Optional[List[Dict[str, str]]] = None
     ):
-        """Zero-latency Conversational Streamer: Uses ConversationExperienceEngine for organic ChatGPT/Claude AI dialogue."""
+        """Zero-latency Conversational Streamer: Uses ConversationExperienceEngine for organic AI dialogue."""
         from core.synthesis.conversation_experience_engine import ConversationExperienceEngine
 
         conversational_text = ConversationExperienceEngine.compose_conversation(
