@@ -25,8 +25,11 @@ except ImportError:
 if __name__ == "__main__":
     mode = sys.argv[1] if len(sys.argv) > 1 else "web"
     if mode == "cli":
-        from core.agent_orchestrator import run_sample_evaluations
-        run_sample_evaluations()
+        from core.agent_orchestrator import PaddyAgentOrchestrator
+        orchestrator = PaddyAgentOrchestrator()
+        res = orchestrator.process_user_request(user_query="What are the common symptoms of Paddy Blast disease?")
+        print("\n--- CLI Result ---")
+        print(getattr(res, "final_synthesis", str(res)))
     else:
         print("[INFO] Launching Streamlit Web App from ui/app.py...")
         os.environ["PYTHONUNBUFFERED"] = "1"
